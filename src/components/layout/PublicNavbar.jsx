@@ -103,7 +103,7 @@ const PublicNavbar = () => {
                             </span>
                         </button>
 
-                        <div className="absolute left-1/2 top-full hidden w-40 -translate-x-1/2 pt-3 group-hover:block">
+                        <div className="absolute left-1/2 top-full hidden w-50 -translate-x-1/2 pt-3 group-hover:block">
                             <div className="rounded-xl border border-gray-100 bg-white p-2 shadow-lg">
                                 <Link to="/recruitment/jobs" className={`block rounded-lg px-4 py-2.5 ${dropdownText}`}>
                                     <Text as="span" size="base" weight="semibold">
@@ -135,10 +135,7 @@ const PublicNavbar = () => {
 
                         <div className="absolute left-1/2 top-full hidden w-52 -translate-x-1/2 pt-3 group-hover:block">
                             <div className="rounded-xl border border-gray-100 bg-white p-2 shadow-lg">
-                                <Link
-                                    to="/employers/manpower-request"
-                                    className={`block rounded-lg px-4 py-2.5 ${dropdownText}`}
-                                >
+                                <Link to="/manpower-request" className={`block rounded-lg px-4 py-2.5 ${dropdownText}`}>
                                     <Text as="span" size="base" weight="semibold">
                                         Manpower Request
                                     </Text>

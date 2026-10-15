@@ -41,7 +41,6 @@ const HeroSection = () => {
                 />
             </div>
 
-            {/* Dark Overlay for better text readability */}
             <div className="pointer-events-none absolute inset-0 z-0 bg-black/40" />
 
             {/* Curve SVG */}
@@ -56,7 +55,6 @@ const HeroSection = () => {
                 </svg>
             </div>
 
-            {/* Content Container (Tamang-tama lang ang spacing sa ibaba) */}
             <motion.div
                 className="relative z-10 mx-auto flex min-h-[calc(100vh-56px)] max-w-7xl items-center px-5 pt-16 pb-20 sm:px-6 sm:pb-24 lg:px-8 lg:pb-28"
                 initial="hidden"
@@ -77,13 +75,28 @@ const HeroSection = () => {
 
                     <motion.h1
                         variants={itemVariants}
-                        className="text-5xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl"
+                        className="text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl"
                     >
                         Connecting
                         <br />
-                        Filipino Workers
+                        <span className="text-[#EFE8A5]">Filipino</span> Workers
                         <br />
-                        to Global Opportunities
+                        to <br />
+                        <motion.span
+                            animate={{y: [0, -3, 0]}}
+                            transition={{duration: 2, repeat: Infinity, ease: "easeInOut"}}
+                            className="inline-block leading-none text-[#EFE8A5]"
+                        >
+                            Global
+                        </motion.span>{" "}
+                        <span className="text-[#EFE8A5]">Opportunities</span>
+                        <motion.span
+                            animate={{opacity: [1, 0, 1]}}
+                            transition={{duration: 0.8, repeat: Infinity, ease: "easeInOut"}}
+                            className="inline-block text-[#EFE8A5] font-mono"
+                        >
+                            _
+                        </motion.span>
                     </motion.h1>
 
                     <motion.div variants={itemVariants}>

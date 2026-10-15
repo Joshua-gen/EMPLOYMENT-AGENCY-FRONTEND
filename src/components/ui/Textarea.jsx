@@ -1,4 +1,21 @@
-const Textarea = ({label, error, id, className = "", textareaClassName = "", required = false, rows = 5, ...props}) => {
+const resizes = {
+    none: "resize-none",
+    vertical: "resize-y",
+    horizontal: "resize-x",
+    both: "resize",
+};
+
+const Textarea = ({
+    label,
+    error,
+    id,
+    className = "",
+    textareaClassName = "",
+    required = false,
+    rows = 5,
+    resize = "vertical",
+    ...props
+}) => {
     const textareaId = id || props.name;
 
     return (
@@ -14,7 +31,9 @@ const Textarea = ({label, error, id, className = "", textareaClassName = "", req
                 id={textareaId}
                 rows={rows}
                 required={required}
-                className={`w-full resize-none rounded-lg border px-3 py-2.5 text-gray-900 outline-none transition placeholder:text-gray-400 focus:ring-2 ${
+                className={`w-full ${
+                    resizes[resize] || resizes.vertical
+                } rounded-lg border px-3 py-2.5 text-gray-900 outline-none transition placeholder:text-gray-400 focus:ring-2 ${
                     error
                         ? "border-red-500 focus:border-red-500 focus:ring-red-200"
                         : "border-gray-300 focus:border-[#062B4A] focus:ring-[#062B4A]/20"

@@ -154,7 +154,7 @@ const AnnouncementSection = () => {
 
             <div className="pointer-events-none absolute bottom-0 left-0 z-20 w-full overflow-hidden leading-none">
                 <svg
-                    className="relative block h-12 w-full text-white sm:h-20 lg:h-28"
+                    className="relative block h-12 w-full text-gray-50 sm:h-20 lg:h-28"
                     viewBox="0 0 1200 120"
                     preserveAspectRatio="none"
                     fill="currentColor"

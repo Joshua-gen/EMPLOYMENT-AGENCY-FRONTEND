@@ -1,5 +1,6 @@
-import {ArrowLeft, BriefcaseBusiness, CalendarDays, Clock3, FileCheck2, Globe2, MapPin, Users} from "lucide-react";
+import {ArrowLeft, BriefcaseBusiness, CalendarDays, Clock3, Globe2, MapPin, Users} from "lucide-react";
 import {useNavigate, useParams} from "react-router-dom";
+
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Heading from "../../components/ui/Heading";
@@ -11,31 +12,30 @@ const jobs = [
         title: "Factory Worker",
         country: "Taiwan",
         employer: "Available upon request",
-        description:
-            "Work in a manufacturing environment assisting with production, packaging, assembly, and other assigned factory operations.",
-        qualifications: [
-            "At least 18 years old",
-            "Physically fit and capable of performing assigned duties",
-            "Willing to work in a manufacturing environment",
-            "Previous factory experience is an advantage",
-        ],
+        description: `Work in a manufacturing environment assisting with production, packaging, assembly, and other assigned factory operations.
+
+Qualifications:
+- At least 18 years old
+- Physically fit and capable of performing assigned duties
+- Willing to work in a manufacturing environment
+- Previous factory experience is an advantage
+
+Benefits:
+- Employer-provided benefits subject to employment contract
+- Overtime opportunities subject to employer requirements
+- Other benefits based on the approved employment contract
+
+Requirements:
+- Valid passport
+- Updated resume or application form
+- Required identification documents
+- Medical examination when required
+- Other documents required during processing`,
         salary: "To be discussed",
-        benefits: [
-            "Employer-provided benefits subject to employment contract",
-            "Overtime opportunities subject to employer requirements",
-            "Other benefits based on the approved employment contract",
-        ],
         vacancies: "Multiple",
         workingHours: "As specified in the employment contract",
         contractDuration: "As specified in the employment contract",
         workLocation: "Taiwan",
-        requirements: [
-            "Valid passport",
-            "Updated resume or application form",
-            "Required identification documents",
-            "Medical examination when required",
-            "Other documents required during processing",
-        ],
         deadline: "October 30, 2026",
     },
     {
@@ -43,31 +43,30 @@ const jobs = [
         title: "Warehouse Worker",
         country: "Taiwan",
         employer: "Available upon request",
-        description:
-            "Assist with warehouse operations including receiving, sorting, organizing, packing, and preparing products for shipment.",
-        qualifications: [
-            "At least 18 years old",
-            "Physically fit",
-            "Able to perform warehouse-related duties",
-            "Previous warehouse experience is an advantage",
-        ],
+        description: `Assist with warehouse operations including receiving, sorting, organizing, packing, and preparing products for shipment.
+
+Qualifications:
+- At least 18 years old
+- Physically fit
+- Able to perform warehouse-related duties
+- Previous warehouse experience is an advantage
+
+Benefits:
+- Employer-provided benefits subject to employment contract
+- Overtime opportunities subject to employer requirements
+- Other benefits based on the approved employment contract
+
+Requirements:
+- Valid passport
+- Updated resume or application form
+- Required identification documents
+- Medical examination when required
+- Other documents required during processing`,
         salary: "To be discussed",
-        benefits: [
-            "Employer-provided benefits subject to employment contract",
-            "Overtime opportunities subject to employer requirements",
-            "Other benefits based on the approved employment contract",
-        ],
         vacancies: "Multiple",
         workingHours: "As specified in the employment contract",
         contractDuration: "As specified in the employment contract",
         workLocation: "Taiwan",
-        requirements: [
-            "Valid passport",
-            "Updated resume or application form",
-            "Required identification documents",
-            "Medical examination when required",
-            "Other documents required during processing",
-        ],
         deadline: "November 5, 2026",
     },
     {
@@ -75,31 +74,30 @@ const jobs = [
         title: "Production Operator",
         country: "South Korea",
         employer: "Available upon request",
-        description:
-            "Perform production-related tasks while following workplace procedures, quality standards, and assigned operational requirements.",
-        qualifications: [
-            "At least 18 years old",
-            "Physically fit",
-            "Able to follow workplace instructions",
-            "Relevant production experience is an advantage",
-        ],
+        description: `Perform production-related tasks while following workplace procedures, quality standards, and assigned operational requirements.
+
+Qualifications:
+- At least 18 years old
+- Physically fit
+- Able to follow workplace instructions
+- Relevant production experience is an advantage
+
+Benefits:
+- Employer-provided benefits subject to employment contract
+- Overtime opportunities subject to employer requirements
+- Other benefits based on the approved employment contract
+
+Requirements:
+- Valid passport
+- Updated resume or application form
+- Required identification documents
+- Medical examination when required
+- Other documents required during processing`,
         salary: "To be discussed",
-        benefits: [
-            "Employer-provided benefits subject to employment contract",
-            "Overtime opportunities subject to employer requirements",
-            "Other benefits based on the approved employment contract",
-        ],
         vacancies: "Multiple",
         workingHours: "As specified in the employment contract",
         contractDuration: "As specified in the employment contract",
         workLocation: "South Korea",
-        requirements: [
-            "Valid passport",
-            "Updated resume or application form",
-            "Required identification documents",
-            "Medical examination when required",
-            "Other documents required during processing",
-        ],
         deadline: "November 15, 2026",
     },
     {
@@ -107,31 +105,30 @@ const jobs = [
         title: "Caregiver",
         country: "Japan",
         employer: "Available upon request",
-        description:
-            "Provide daily assistance and care while maintaining a safe, respectful, and supportive environment for the assigned individual.",
-        qualifications: [
-            "At least 18 years old",
-            "Physically and mentally capable of performing caregiving duties",
-            "Patient and responsible",
-            "Caregiving experience or relevant training is an advantage",
-        ],
+        description: `Provide daily assistance and care while maintaining a safe, respectful, and supportive environment for the assigned individual.
+
+Qualifications:
+- At least 18 years old
+- Physically and mentally capable of performing caregiving duties
+- Patient and responsible
+- Caregiving experience or relevant training is an advantage
+
+Benefits:
+- Employer-provided benefits subject to employment contract
+- Overtime opportunities subject to employer requirements
+- Other benefits based on the approved employment contract
+
+Requirements:
+- Valid passport
+- Updated resume or application form
+- Required identification documents
+- Medical examination when required
+- Other documents required during processing`,
         salary: "To be discussed",
-        benefits: [
-            "Employer-provided benefits subject to employment contract",
-            "Overtime opportunities subject to employer requirements",
-            "Other benefits based on the approved employment contract",
-        ],
         vacancies: "Multiple",
         workingHours: "As specified in the employment contract",
         contractDuration: "As specified in the employment contract",
         workLocation: "Japan",
-        requirements: [
-            "Valid passport",
-            "Updated resume or application form",
-            "Required identification documents",
-            "Medical examination when required",
-            "Other documents required during processing",
-        ],
         deadline: "November 20, 2026",
     },
 ];
@@ -163,7 +160,8 @@ const JobDetails = () => {
 
     return (
         <main className="min-h-screen bg-gray-50">
-            <section className="relative bg-[#062B4A] px-5 pt-16 pb-20 sm:px-6 lg:px-8">
+            {/* Job Header */}
+            <section className="relative bg-[#062B4A] px-5 pb-20 pt-16 sm:px-6 lg:px-8">
                 <div className="mx-auto max-w-7xl">
                     <button
                         type="button"
@@ -199,76 +197,31 @@ const JobDetails = () => {
 
                 <div className="absolute bottom-0 left-0 right-0 overflow-hidden leading-none">
                     <svg
-                        className="relative block w-full h-8 sm:h-12 text-gray-50"
+                        className="relative block h-8 w-full text-gray-50 sm:h-12"
                         viewBox="0 0 1200 120"
                         preserveAspectRatio="none"
                         fill="currentColor"
                     >
-                        <path d="M0,0 C300,90 900,90 1200,0 L1200,120 L0,120 Z"></path>
+                        <path d="M0,0 C300,90 900,90 1200,0 L1200,120 L0,120 Z" />
                     </svg>
                 </div>
             </section>
 
+            {/* Job Content */}
             <section className="px-5 py-12 sm:px-6 lg:px-8">
                 <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_340px]">
-                    <div className="space-y-6">
+                    {/* Single Job Description Card */}
+                    <div>
                         <Card>
-                            <Heading as="h2" className="mb-4">
+                            <Heading as="h2" className="mb-5">
                                 Job Description
                             </Heading>
 
-                            <Text className="leading-7 text-gray-600">{job.description}</Text>
-                        </Card>
-
-                        <Card>
-                            <Heading as="h2" className="mb-5">
-                                Qualifications
-                            </Heading>
-
-                            <div className="space-y-3">
-                                {job.qualifications.map((qualification) => (
-                                    <div key={qualification} className="flex items-start gap-3">
-                                        <FileCheck2 size={19} className="mt-1 shrink-0 text-[#062B4A]" />
-
-                                        <Text className="leading-7 text-gray-600">{qualification}</Text>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-
-                        <Card>
-                            <Heading as="h2" className="mb-5">
-                                Benefits
-                            </Heading>
-
-                            <div className="space-y-3">
-                                {job.benefits.map((benefit) => (
-                                    <div key={benefit} className="flex items-start gap-3">
-                                        <FileCheck2 size={19} className="mt-1 shrink-0 text-[#062B4A]" />
-
-                                        <Text className="leading-7 text-gray-600">{benefit}</Text>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-
-                        <Card>
-                            <Heading as="h2" className="mb-5">
-                                Requirements
-                            </Heading>
-
-                            <div className="space-y-3">
-                                {job.requirements.map((requirement) => (
-                                    <div key={requirement} className="flex items-start gap-3">
-                                        <FileCheck2 size={19} className="mt-1 shrink-0 text-[#062B4A]" />
-
-                                        <Text className="leading-7 text-gray-600">{requirement}</Text>
-                                    </div>
-                                ))}
-                            </div>
+                            <Text className="whitespace-pre-line leading-7 text-gray-600">{job.description}</Text>
                         </Card>
                     </div>
 
+                    {/* Job Information */}
                     <div>
                         <Card className="sticky top-20">
                             <Heading as="h2" className="mb-6">
@@ -321,30 +274,6 @@ const JobDetails = () => {
                                         </Text>
 
                                         <Text className="mt-1 text-gray-800">{job.vacancies}</Text>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3">
-                                    <Clock3 size={19} className="mt-0.5 shrink-0 text-[#062B4A]" />
-
-                                    <div>
-                                        <Text size="sm" weight="semibold" className="text-gray-500">
-                                            Working Hours
-                                        </Text>
-
-                                        <Text className="mt-1 text-gray-800">{job.workingHours}</Text>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3">
-                                    <CalendarDays size={19} className="mt-0.5 shrink-0 text-[#062B4A]" />
-
-                                    <div>
-                                        <Text size="sm" weight="semibold" className="text-gray-500">
-                                            Contract Duration
-                                        </Text>
-
-                                        <Text className="mt-1 text-gray-800">{job.contractDuration}</Text>
                                     </div>
                                 </div>
 
