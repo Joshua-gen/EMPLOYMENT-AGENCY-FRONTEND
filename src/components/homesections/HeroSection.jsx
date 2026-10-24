@@ -3,6 +3,7 @@ import {motion} from "framer-motion";
 import heroImage from "../../assets/images/home-bg-5.gif";
 import Button from "../../components/ui/Button";
 import Text from "../../components/ui/Text";
+import {Plane} from "lucide-react";
 
 const containerVariants = {
     hidden: {opacity: 0},
@@ -91,11 +92,19 @@ const HeroSection = () => {
                         </motion.span>{" "}
                         <span className="text-[#EFE8A5]">Opportunities</span>
                         <motion.span
-                            animate={{opacity: [1, 0, 1]}}
-                            transition={{duration: 0.8, repeat: Infinity, ease: "easeInOut"}}
-                            className="inline-block text-[#EFE8A5] font-mono"
+                            animate={{
+                                x: [0, 8, 0],
+                                y: [0, -5, 0],
+                                rotate: [0, -5, 0],
+                            }}
+                            transition={{
+                                duration: 1.8,
+                                repeat: Infinity,
+                                ease: "easeInOut",
+                            }}
+                            className="ml-3 inline-flex items-center text-[#EFE8A5]"
                         >
-                            _
+                            <Plane size={56} strokeWidth={1.5} fill="currentColor" className="-rotate-12" />
                         </motion.span>
                     </motion.h1>
 

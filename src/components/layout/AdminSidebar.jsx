@@ -5,6 +5,7 @@ import {
     BriefcaseBusiness,
     Users,
     Building2,
+    Handshake,
     Globe,
     LogOut,
     Plane,
@@ -29,6 +30,11 @@ const navigation = [
         label: "Applicant Management",
         path: "/dashboard/applicants",
         icon: Users,
+    },
+    {
+        label: "Employer Management",
+        path: "/dashboard/employers",
+        icon: Handshake,
     },
     {
         label: "Manpower Request Management",

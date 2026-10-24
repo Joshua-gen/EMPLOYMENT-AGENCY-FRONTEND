@@ -5,8 +5,11 @@ import Card from "../../components/ui/Card";
 import Heading from "../../components/ui/Heading";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
+import Text from "../../components/ui/Text";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import Pagination from "../../shared/components/Pagination";
+import useToast from "../../shared/hooks/useToast";
+import CountrySelect from "../../features/countries/components/CountrySelect";
 import {jobApi} from "../../features/jobs/api/jobApi";
 import JobDetailsModal from "../../features/jobs/components/JobDetailsModal";
 import JobFormModal from "../../features/jobs/components/JobFormModal";
@@ -22,6 +25,8 @@ const STATUS_OPTIONS = [
 ];
 
 const JobManagement = () => {
+    const toast = useToast();
+
     const {
         jobs,
         meta,
@@ -31,6 +36,7 @@ const JobManagement = () => {
         filters,
         setSearch,
         setStatus,
+        setCountry,
         setPage,
         setPerPage,
         createJob,
@@ -41,7 +47,6 @@ const JobManagement = () => {
 
     const [modal, setModal] = useState(null); // "create" | "edit" | "details"
     const [selectedJob, setSelectedJob] = useState(null);
-    const [actionError, setActionError] = useState("");
     const [jobToDelete, setJobToDelete] = useState(null);
     const [deleting, setDeleting] = useState(false);
 
@@ -69,20 +74,35 @@ const JobManagement = () => {
         setSelectedJob(null);
     };
 
+    // Ang form modal ang nagpapakita ng field errors, kaya toast lang ang success dito
+    const handleCreate = async (data) => {
+        const result = await createJob(data);
+        if (result.ok) toast.success("Job opening created as draft.");
+        return result;
+    };
+
+    const handleUpdate = async (data) => {
+        const result = await updateJob(selectedJob.id, data);
+        if (result.ok) toast.success("Job opening updated.");
+        return result;
+    };
+
     const handleStatus = async (job, status) => {
-        setActionError("");
         const result = await changeStatus(job.id, status);
-        if (!result.ok) setActionError(result.message);
+
+        if (result.ok) toast.success(`"${job.title}" is now ${status}.`);
+        else toast.error(result.message, {title: "Status update failed"});
     };
 
     const handleDelete = (job) => setJobToDelete(job);
 
     const confirmDelete = async () => {
         setDeleting(true);
-        setActionError("");
 
         const result = await deleteJob(jobToDelete.id);
-        if (!result.ok) setActionError(result.message);
+
+        if (result.ok) toast.success(`"${jobToDelete.title}" was deleted.`);
+        else toast.error(result.message, {title: "Delete failed"});
 
         setDeleting(false);
         setJobToDelete(null);
@@ -94,15 +114,15 @@ const JobManagement = () => {
                 {/* Header */}
                 <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#4F7383]">
+                        <Text size="sm" weight="bold" className="uppercase tracking-[0.18em] text-[#4F7383]">
                             Recruitment Management
-                        </p>
+                        </Text>
                         <Heading as="h1" className="mt-1">
                             Job Management
                         </Heading>
-                        <p className="mt-2 text-sm text-gray-500">
+                        <Text size="sm" className="mt-2 text-gray-500">
                             Create and manage job openings, details, and publication status.
-                        </p>
+                        </Text>
                     </div>
 
                     <Button type="button" onClick={openCreate}>
@@ -111,8 +131,10 @@ const JobManagement = () => {
                     </Button>
                 </section>
 
-                {(error || actionError) && (
-                    <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{actionError || error}</p>
+                {error && (
+                    <Text size="sm" className="rounded-lg bg-red-50 px-4 py-3 text-red-600">
+                        {error}
+                    </Text>
                 )}
 
                 <JobSummaryCards summary={summary} />
@@ -123,9 +145,11 @@ const JobManagement = () => {
                         <Heading as="h2" className="text-lg">
                             Job Openings
                         </Heading>
-                        <p className="mt-1 text-sm text-gray-500">View, search, and manage available positions.</p>
+                        <Text size="sm" className="mt-1 text-gray-500">
+                            View, search, and manage available positions.
+                        </Text>
 
-                        <div className="mt-5 grid gap-3 md:grid-cols-[1fr_220px]">
+                        <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_220px_240px]">
                             <Input
                                 type="search"
                                 name="search"
@@ -140,8 +164,11 @@ const JobManagement = () => {
                                 onChange={(event) => setStatus(event.target.value)}
                                 options={STATUS_OPTIONS}
                             />
+
+                            <CountrySelect includeAll value={filters.country} onChange={setCountry} />
                         </div>
                     </div>
+
                     <JobTable
                         jobs={jobs}
                         loading={loading}
@@ -150,6 +177,7 @@ const JobManagement = () => {
                         onStatus={handleStatus}
                         onDelete={handleDelete}
                     />
+
                     <Pagination
                         meta={meta}
                         perPage={filters.perPage}
@@ -164,7 +192,7 @@ const JobManagement = () => {
                     mode={modal}
                     job={selectedJob}
                     onClose={closeModal}
-                    onSubmit={modal === "create" ? createJob : (data) => updateJob(selectedJob.id, data)}
+                    onSubmit={modal === "create" ? handleCreate : handleUpdate}
                 />
             )}
 

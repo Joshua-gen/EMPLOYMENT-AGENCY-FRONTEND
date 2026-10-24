@@ -27,7 +27,7 @@ const RowActions = ({items, label = "Row actions"}) => {
             </Button>
 
             {open && (
-                <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-gray-200 bg-white p-1 shadow-lg">
+                <div className="absolute right-0 top-full z-20 mt-1 w-50 rounded-lg border border-gray-200 bg-white p-1 shadow-lg">
                     {items
                     .filter((item) => !item.hidden)
                     .map(({label, icon: Icon, onClick, tone = "default"}) => (

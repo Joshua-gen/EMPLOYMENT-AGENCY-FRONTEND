@@ -8,3 +8,35 @@
 body {
     margin: 0;
 }
+
+.deployment-popup {
+    min-width: 180px;
+    color: #062b4a;
+    font-family: inherit;
+}
+
+.deployment-popup strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.deployment-popup p {
+    margin: 5px 0;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.maplibregl-popup-content {
+    padding: 14px 16px;
+    border: 1px solid rgb(79 115 131 / 25%);
+    border-radius: 12px;
+    box-shadow: 0 10px 35px rgb(6 43 74 / 20%);
+}
+
+.maplibregl-popup-close-button {
+    padding: 5px 8px;
+    color: #062b4a;
+    font-size: 18px;
+}

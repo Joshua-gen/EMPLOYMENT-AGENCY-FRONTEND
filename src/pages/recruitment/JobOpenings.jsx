@@ -1,86 +1,23 @@
-import {useMemo, useState} from "react";
 import {CalendarDays, ChevronLeft, ChevronRight, Globe2, Search, X} from "lucide-react";
 import {useNavigate} from "react-router-dom";
 import Card from "../../components/ui/Card";
 import Heading from "../../components/ui/Heading";
 import Text from "../../components/ui/Text";
-
-const PAGE_SIZE = 3; // palitan kung ilan ang gusto mo per page
-
-const jobs = [
-    {
-        id: 1,
-        title: "Factory Worker",
-        country: "Taiwan",
-        deadline: "October 30, 2026",
-        status: "Open",
-    },
-    {
-        id: 2,
-        title: "Warehouse Worker",
-        country: "Taiwan",
-        deadline: "November 5, 2026",
-        status: "Open",
-    },
-    {
-        id: 3,
-        title: "Production Operator",
-        country: "South Korea",
-        deadline: "November 15, 2026",
-        status: "Open",
-    },
-    {
-        id: 4,
-        title: "Caregiver",
-        country: "Japan",
-        deadline: "November 20, 2026",
-        status: "Open",
-    },
-];
+import useWebsiteJobs from "../../features/website/hooks/useWebsiteJobs";
+import {formatLongDate} from "../../shared/utils/formatDate";
 
 const JobOpenings = () => {
     const navigate = useNavigate();
 
-    const [search, setSearch] = useState("");
-    const [country, setCountry] = useState("All");
-    const [page, setPage] = useState(1);
+    const {jobs, meta, countries, loading, error, filters, setSearch, setCountry, setPage, clearFilters} =
+        useWebsiteJobs();
 
-    // kunin automatically yung mga country mula sa jobs
-    const countries = useMemo(() => ["All", ...new Set(jobs.map((job) => job.country))], []);
+    const countryOptions = ["All", ...countries];
+    const totalPages = meta?.last_page ?? 1;
+    const currentPage = meta?.current_page ?? 1;
+    const total = meta?.total ?? 0;
 
-    const filteredJobs = useMemo(() => {
-        const query = search.trim().toLowerCase();
-
-        return jobs.filter((job) => {
-            const matchesSearch = job.title.toLowerCase().includes(query);
-            const matchesCountry = country === "All" || job.country === country;
-
-            return matchesSearch && matchesCountry;
-        });
-    }, [search, country]);
-
-    const totalPages = Math.max(1, Math.ceil(filteredJobs.length / PAGE_SIZE));
-    const currentPage = Math.min(page, totalPages);
-    const startIndex = (currentPage - 1) * PAGE_SIZE;
-    const paginatedJobs = filteredJobs.slice(startIndex, startIndex + PAGE_SIZE);
-
-    const hasActiveFilters = search !== "" || country !== "All";
-
-    const handleSearch = (value) => {
-        setSearch(value);
-        setPage(1);
-    };
-
-    const handleCountry = (value) => {
-        setCountry(value);
-        setPage(1);
-    };
-
-    const clearFilters = () => {
-        setSearch("");
-        setCountry("All");
-        setPage(1);
-    };
+    const hasActiveFilters = filters.search !== "" || filters.country !== "All";
 
     return (
         <main className="min-h-screen bg-gray-50">
@@ -132,19 +69,19 @@ const JobOpenings = () => {
 
                             <input
                                 type="text"
-                                value={search}
-                                onChange={(e) => handleSearch(e.target.value)}
+                                value={filters.search}
+                                onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Search job title..."
                                 className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-800 outline-none transition focus:border-[#062B4A] focus:ring-2 focus:ring-[#062B4A]/20"
                             />
                         </div>
 
                         <select
-                            value={country}
-                            onChange={(e) => handleCountry(e.target.value)}
+                            value={filters.country}
+                            onChange={(e) => setCountry(e.target.value)}
                             className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#062B4A] focus:ring-2 focus:ring-[#062B4A]/20 sm:w-52"
                         >
-                            {countries.map((c) => (
+                            {countryOptions.map((c) => (
                                 <option key={c} value={c}>
                                     {c === "All" ? "All Countries" : c}
                                 </option>
@@ -163,18 +100,24 @@ const JobOpenings = () => {
                         )}
                     </div>
 
+                    {error && (
+                        <Text size="sm" className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-red-600">
+                            {error}
+                        </Text>
+                    )}
+
                     <Text size="sm" className="mb-4 text-gray-500">
-                        {filteredJobs.length === 0
+                        {loading && jobs.length === 0
+                            ? "Loading positions..."
+                            : total === 0
                             ? "No positions found"
-                            : `Showing ${startIndex + 1}-${Math.min(startIndex + PAGE_SIZE, filteredJobs.length)} of ${
-                                  filteredJobs.length
-                              } position${filteredJobs.length > 1 ? "s" : ""}`}
+                            : `Showing ${meta.from}-${meta.to} of ${total} position${total > 1 ? "s" : ""}`}
                     </Text>
 
                     {/* Job list */}
-                    {paginatedJobs.length > 0 ? (
-                        <div className="space-y-5">
-                            {paginatedJobs.map((job) => (
+                    {jobs.length > 0 ? (
+                        <div className={`space-y-5 ${loading ? "opacity-60" : ""}`}>
+                            {jobs.map((job) => (
                                 <Card
                                     key={job.id}
                                     className="group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
@@ -185,7 +128,7 @@ const JobOpenings = () => {
                                                 <Heading as="h3">{job.title}</Heading>
 
                                                 <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-                                                    {job.status}
+                                                    Open
                                                 </span>
                                             </div>
 
@@ -199,7 +142,9 @@ const JobOpenings = () => {
                                                 <div className="flex items-center gap-2 text-gray-600">
                                                     <CalendarDays size={17} className="text-[#062B4A]" />
 
-                                                    <Text size="sm">Application Deadline: {job.deadline}</Text>
+                                                    <Text size="sm">
+                                                        Application Deadline: {formatLongDate(job.deadline)}
+                                                    </Text>
                                                 </div>
                                             </div>
                                         </div>
@@ -217,19 +162,21 @@ const JobOpenings = () => {
                             ))}
                         </div>
                     ) : (
-                        <Card>
-                            <div className="py-10 text-center">
-                                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#062B4A]/10 text-[#062B4A]">
-                                    <Search size={26} />
+                        !loading && (
+                            <Card>
+                                <div className="py-10 text-center">
+                                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#062B4A]/10 text-[#062B4A]">
+                                        <Search size={26} />
+                                    </div>
+
+                                    <Heading as="h3" className="mb-2">
+                                        No matching positions
+                                    </Heading>
+
+                                    <Text className="text-gray-600">Try a different keyword or country.</Text>
                                 </div>
-
-                                <Heading as="h3" className="mb-2">
-                                    No matching positions
-                                </Heading>
-
-                                <Text className="text-gray-600">Try a different keyword or country.</Text>
-                            </div>
-                        </Card>
+                            </Card>
+                        )
                     )}
 
                     {/* Pagination */}

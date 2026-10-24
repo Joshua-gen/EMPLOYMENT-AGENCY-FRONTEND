@@ -4,7 +4,7 @@ import parseError from "../../../shared/utils/parseError";
 import {jobApi} from "../api/jobApi";
 
 const useJobs = () => {
-    const [filters, setFilters] = useState({search: "", status: "All", page: 1, perPage: 5});
+    const [filters, setFilters] = useState({search: "", status: "All", country: "All", page: 1, perPage: 5});
     const [jobs, setJobs] = useState([]);
     const [meta, setMeta] = useState(null);
     const [summary, setSummary] = useState({published: 0, draft: 0, closed: 0});
@@ -21,8 +21,9 @@ const useJobs = () => {
 
         jobApi
         .list({
-            search: debouncedSearch,
-            status: filters.status,
+            search: debouncedSearch || undefined,
+            status: filters.status !== "All" ? filters.status : undefined,
+            country: filters.country !== "All" ? filters.country : undefined,
             page: filters.page,
             per_page: filters.perPage,
         })
@@ -45,7 +46,7 @@ const useJobs = () => {
         return () => {
             ignore = true;
         };
-    }, [debouncedSearch, filters.status, filters.page, filters.perPage, refreshKey]);
+    }, [debouncedSearch, filters.status, filters.country, filters.page, filters.perPage, refreshKey]);
 
     // Summary cards
     useEffect(() => {
@@ -58,6 +59,7 @@ const useJobs = () => {
     // Filters
     const setSearch = (search) => setFilters((previous) => ({...previous, search, page: 1}));
     const setStatus = (status) => setFilters((previous) => ({...previous, status, page: 1}));
+    const setCountry = (country) => setFilters((previous) => ({...previous, country, page: 1}));
     const setPage = (page) => setFilters((previous) => ({...previous, page}));
     const setPerPage = (perPage) => setFilters((previous) => ({...previous, perPage, page: 1}));
 
@@ -91,6 +93,7 @@ const useJobs = () => {
         filters,
         setSearch,
         setStatus,
+        setCountry,
         setPage,
         setPerPage,
         createJob,

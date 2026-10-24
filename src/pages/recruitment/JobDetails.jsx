@@ -1,145 +1,30 @@
-import {ArrowLeft, BriefcaseBusiness, CalendarDays, Clock3, Globe2, MapPin, Users} from "lucide-react";
+import {ArrowLeft, BriefcaseBusiness, CalendarDays, Globe2, MapPin, Users} from "lucide-react";
 import {useNavigate, useParams} from "react-router-dom";
 
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Heading from "../../components/ui/Heading";
 import Text from "../../components/ui/Text";
-
-const jobs = [
-    {
-        id: 1,
-        title: "Factory Worker",
-        country: "Taiwan",
-        employer: "Available upon request",
-        description: `Work in a manufacturing environment assisting with production, packaging, assembly, and other assigned factory operations.
-
-Qualifications:
-- At least 18 years old
-- Physically fit and capable of performing assigned duties
-- Willing to work in a manufacturing environment
-- Previous factory experience is an advantage
-
-Benefits:
-- Employer-provided benefits subject to employment contract
-- Overtime opportunities subject to employer requirements
-- Other benefits based on the approved employment contract
-
-Requirements:
-- Valid passport
-- Updated resume or application form
-- Required identification documents
-- Medical examination when required
-- Other documents required during processing`,
-        salary: "To be discussed",
-        vacancies: "Multiple",
-        workingHours: "As specified in the employment contract",
-        contractDuration: "As specified in the employment contract",
-        workLocation: "Taiwan",
-        deadline: "October 30, 2026",
-    },
-    {
-        id: 2,
-        title: "Warehouse Worker",
-        country: "Taiwan",
-        employer: "Available upon request",
-        description: `Assist with warehouse operations including receiving, sorting, organizing, packing, and preparing products for shipment.
-
-Qualifications:
-- At least 18 years old
-- Physically fit
-- Able to perform warehouse-related duties
-- Previous warehouse experience is an advantage
-
-Benefits:
-- Employer-provided benefits subject to employment contract
-- Overtime opportunities subject to employer requirements
-- Other benefits based on the approved employment contract
-
-Requirements:
-- Valid passport
-- Updated resume or application form
-- Required identification documents
-- Medical examination when required
-- Other documents required during processing`,
-        salary: "To be discussed",
-        vacancies: "Multiple",
-        workingHours: "As specified in the employment contract",
-        contractDuration: "As specified in the employment contract",
-        workLocation: "Taiwan",
-        deadline: "November 5, 2026",
-    },
-    {
-        id: 3,
-        title: "Production Operator",
-        country: "South Korea",
-        employer: "Available upon request",
-        description: `Perform production-related tasks while following workplace procedures, quality standards, and assigned operational requirements.
-
-Qualifications:
-- At least 18 years old
-- Physically fit
-- Able to follow workplace instructions
-- Relevant production experience is an advantage
-
-Benefits:
-- Employer-provided benefits subject to employment contract
-- Overtime opportunities subject to employer requirements
-- Other benefits based on the approved employment contract
-
-Requirements:
-- Valid passport
-- Updated resume or application form
-- Required identification documents
-- Medical examination when required
-- Other documents required during processing`,
-        salary: "To be discussed",
-        vacancies: "Multiple",
-        workingHours: "As specified in the employment contract",
-        contractDuration: "As specified in the employment contract",
-        workLocation: "South Korea",
-        deadline: "November 15, 2026",
-    },
-    {
-        id: 4,
-        title: "Caregiver",
-        country: "Japan",
-        employer: "Available upon request",
-        description: `Provide daily assistance and care while maintaining a safe, respectful, and supportive environment for the assigned individual.
-
-Qualifications:
-- At least 18 years old
-- Physically and mentally capable of performing caregiving duties
-- Patient and responsible
-- Caregiving experience or relevant training is an advantage
-
-Benefits:
-- Employer-provided benefits subject to employment contract
-- Overtime opportunities subject to employer requirements
-- Other benefits based on the approved employment contract
-
-Requirements:
-- Valid passport
-- Updated resume or application form
-- Required identification documents
-- Medical examination when required
-- Other documents required during processing`,
-        salary: "To be discussed",
-        vacancies: "Multiple",
-        workingHours: "As specified in the employment contract",
-        contractDuration: "As specified in the employment contract",
-        workLocation: "Japan",
-        deadline: "November 20, 2026",
-    },
-];
+import useWebsiteJob from "../../features/website/hooks/useWebsiteJob";
+import {formatLongDate} from "../../shared/utils/formatDate";
 
 const JobDetails = () => {
     const navigate = useNavigate();
     const {id} = useParams();
 
-    const job = jobs.find((item) => String(item.id) === String(id));
+    const {job, loading, error} = useWebsiteJob(id);
 
-    if (!job) {
+    if (loading) {
+        return (
+            <main className="min-h-screen bg-gray-50 px-5 py-20 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-3xl text-center">
+                    <Text className="text-gray-600">Loading job opening...</Text>
+                </div>
+            </main>
+        );
+    }
+
+    if (error || !job) {
         return (
             <main className="min-h-screen bg-gray-50 px-5 py-20 sm:px-6 lg:px-8">
                 <div className="mx-auto max-w-3xl text-center">
@@ -189,7 +74,7 @@ const JobDetails = () => {
 
                             <div className="flex items-center gap-2">
                                 <CalendarDays size={18} />
-                                <Text>Deadline: {job.deadline}</Text>
+                                <Text>Deadline: {formatLongDate(job.deadline)}</Text>
                             </div>
                         </div>
                     </div>
@@ -210,7 +95,6 @@ const JobDetails = () => {
             {/* Job Content */}
             <section className="px-5 py-12 sm:px-6 lg:px-8">
                 <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_340px]">
-                    {/* Single Job Description Card */}
                     <div>
                         <Card>
                             <Heading as="h2" className="mb-5">
@@ -221,7 +105,6 @@ const JobDetails = () => {
                         </Card>
                     </div>
 
-                    {/* Job Information */}
                     <div>
                         <Card className="sticky top-20">
                             <Heading as="h2" className="mb-6">
@@ -237,7 +120,7 @@ const JobDetails = () => {
                                             Employer
                                         </Text>
 
-                                        <Text className="mt-1 text-gray-800">{job.employer}</Text>
+                                        <Text className="mt-1 text-gray-800">Available upon request</Text>
                                     </div>
                                 </div>
 
@@ -261,7 +144,7 @@ const JobDetails = () => {
                                             Work Location
                                         </Text>
 
-                                        <Text className="mt-1 text-gray-800">{job.workLocation}</Text>
+                                        <Text className="mt-1 text-gray-800">{job.country}</Text>
                                     </div>
                                 </div>
 
@@ -273,7 +156,7 @@ const JobDetails = () => {
                                             Vacancies
                                         </Text>
 
-                                        <Text className="mt-1 text-gray-800">{job.vacancies}</Text>
+                                        <Text className="mt-1 text-gray-800">{job.vacancies || "—"}</Text>
                                     </div>
                                 </div>
 
@@ -283,7 +166,7 @@ const JobDetails = () => {
                                     </Text>
 
                                     <Text size="lg" weight="bold" className="mt-1 text-[#062B4A]">
-                                        {job.salary}
+                                        {job.salary || "To be discussed"}
                                     </Text>
                                 </div>
 
@@ -293,7 +176,7 @@ const JobDetails = () => {
                                     </Text>
 
                                     <Text weight="bold" className="mt-1 text-gray-800">
-                                        {job.deadline}
+                                        {formatLongDate(job.deadline)}
                                     </Text>
                                 </div>
 

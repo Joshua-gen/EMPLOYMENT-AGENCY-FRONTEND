@@ -1,150 +1,251 @@
-import {useState} from "react";
-import {useLocation, useNavigate, useParams} from "react-router-dom";
-import {ArrowLeft, Check, FileText, Upload} from "lucide-react";
+import {useEffect, useState} from "react";
+import {useNavigate, useParams, useSearchParams} from "react-router-dom";
+import {ArrowLeft, Check, FileText} from "lucide-react";
 
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Heading from "../../components/ui/Heading";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
+import Text from "../../components/ui/Text";
 import Textarea from "../../components/ui/Textarea";
+import {
+    CIVIL_STATUS_OPTIONS,
+    EDUCATION_OPTIONS,
+    GENDER_OPTIONS,
+    YEAR_OPTIONS,
+} from "../../features/applicants/constants";
+import {humanize} from "../../features/applicants/utils";
+import {websiteApi} from "../../features/website/api/websiteApi";
+import DetailGrid from "../../shared/components/DetailGrid";
+import FileField from "../../shared/components/FileField";
+import {formatDate, formatPeriod} from "../../shared/utils/formatDate";
+import parseError from "../../shared/utils/parseError";
+
+const STEPS = ["Personal", "Education", "Experience", "Documents", "Review"];
+
+const STEP_FIELDS = {
+    1: ["fullName", "birthday", "gender", "civilStatus", "email", "phone", "address"],
+    2: ["educationalAttainment", "school", "course", "educationStartYear", "educationGraduatedYear"],
+    3: [
+        "previousEmployer",
+        "previousEmployerAddress",
+        "previousPosition",
+        "workStart",
+        "workEnd",
+        "skills",
+        "certifications",
+        "languages",
+    ],
+    4: ["resume", "validId", "passport", "otherRequirements"],
+};
+
+const INITIAL_FORM = {
+    fullName: "",
+    birthday: "",
+    gender: "",
+    civilStatus: "",
+    email: "",
+    phone: "",
+    address: "",
+    educationalAttainment: "",
+    school: "",
+    course: "",
+    educationStartYear: "",
+    educationGraduatedYear: "",
+    previousEmployer: "",
+    previousEmployerAddress: "",
+    previousPosition: "",
+    workStart: "",
+    workEnd: "",
+    skills: "",
+    certifications: "",
+    languages: "",
+    resume: null,
+    validId: null,
+    passport: null,
+    otherRequirements: null,
+};
+
+const toSnake = (key) => key.replace(/[A-Z]/g, (char) => `_${char.toLowerCase()}`);
+const toCamel = (key) => key.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
+
+const thisMonth = () => new Date().toLocaleDateString("en-CA").slice(0, 7); // YYYY-MM (local)
+const today = () => new Date().toLocaleDateString("en-CA");
+
+const validate = (form, step) => {
+    const errors = {};
+
+    if (step === 1) {
+        if (!form.fullName) errors.fullName = "Full name is required.";
+        if (!form.birthday) errors.birthday = "Birthday is required.";
+        if (!form.gender) errors.gender = "Gender is required.";
+        if (!form.civilStatus) errors.civilStatus = "Civil status is required.";
+        if (!form.email) errors.email = "Email address is required.";
+        if (!form.phone) errors.phone = "Contact number is required.";
+        if (!form.address) errors.address = "Address is required.";
+    }
+
+    if (step === 2) {
+        if (!form.educationalAttainment) errors.educationalAttainment = "Educational attainment is required.";
+        if (!form.school) errors.school = "School is required.";
+
+        if (
+            form.educationStartYear &&
+            form.educationGraduatedYear &&
+            Number(form.educationGraduatedYear) < Number(form.educationStartYear)
+        ) {
+            errors.educationGraduatedYear = "Graduated year cannot be earlier than the start year.";
+        }
+    }
+
+    if (step === 3) {
+        if (form.previousEmployer && !form.workStart) {
+            errors.workStart = "Start date is required when you provide a previous employer.";
+        }
+
+        if (form.workStart && form.workStart > thisMonth()) errors.workStart = "Start date cannot be in the future.";
+        if (form.workEnd && form.workEnd > thisMonth()) errors.workEnd = "End date cannot be in the future.";
+
+        if (form.workStart && form.workEnd && form.workEnd < form.workStart) {
+            errors.workEnd = "End date cannot be earlier than the start date.";
+        }
+
+        if (!form.skills) errors.skills = "Please provide your skills.";
+        if (!form.languages) errors.languages = "Please provide your languages.";
+    }
+
+    if (step === 4) {
+        if (!form.resume) errors.resume = "Resume is required.";
+        if (!form.validId) errors.validId = "Valid ID is required.";
+        if (!form.passport) errors.passport = "Passport is required.";
+    }
+
+    return errors;
+};
+
+const firstStepWithError = (errors) =>
+    Object.keys(STEP_FIELDS)
+    .map(Number)
+    .find((step) => STEP_FIELDS[step].some((field) => errors[field]));
+
+const ReviewSection = ({title, items}) => (
+    <div>
+        <Heading as="h3" className="mb-3 text-base text-[#062B4A]">
+            {title}
+        </Heading>
+
+        <div className="rounded-xl bg-gray-50 p-5">
+            <DetailGrid items={items} />
+        </div>
+    </div>
+);
 
 const RecruitmentApply = () => {
     const navigate = useNavigate();
-    const {jobId} = useParams();
-    const location = useLocation();
+    const {jobId: routeJobId} = useParams();
+    const [searchParams] = useSearchParams();
 
-    const selectedJob = location.state?.job || null;
+    // /recruitment/apply?job=12  o  /recruitment/apply/12  o  walang job (direct apply)
+    const [jobId, setJobId] = useState(routeJobId || searchParams.get("job") || "");
+    const [job, setJob] = useState(null);
+    const [jobState, setJobState] = useState(jobId ? "loading" : "none"); // none | loading | ready | missing
 
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
-    const [submitted, setSubmitted] = useState(false);
-
-    const [form, setForm] = useState({
-        jobId: jobId || selectedJob?.id || "",
-        fullName: "",
-        birthday: "",
-        gender: "",
-        civilStatus: "",
-        email: "",
-        phone: "",
-        address: "",
-        educationalAttainment: "",
-        school: "",
-        course: "",
-        previousEmployer: "",
-        previousPosition: "",
-        yearsExperience: "",
-        skills: "",
-        certifications: "",
-        languages: "",
-        resume: null,
-        validId: null,
-        passport: null,
-        otherRequirements: null,
-    });
-
+    const [submitted, setSubmitted] = useState(null);
+    const [form, setForm] = useState(INITIAL_FORM);
     const [errors, setErrors] = useState({});
+    const [formError, setFormError] = useState("");
+
+    useEffect(() => {
+        if (!jobId) return;
+
+        let ignore = false;
+
+        websiteApi
+        .job(jobId)
+        .then((res) => {
+            if (ignore) return;
+            setJob(res.data);
+            setJobState("ready");
+        })
+        .catch(() => !ignore && setJobState("missing"));
+
+        return () => {
+            ignore = true;
+        };
+    }, [jobId]);
+
+    const continueWithoutJob = () => {
+        setJobId("");
+        setJob(null);
+        setJobState("none");
+    };
 
     const handleChange = (event) => {
         const {name, value, files} = event.target;
 
-        setForm((current) => ({
-            ...current,
-            [name]: files ? files[0] : value,
-        }));
-
-        setErrors((current) => ({
-            ...current,
-            [name]: "",
-        }));
+        setForm((current) => ({...current, [name]: files ? files[0] ?? null : value}));
+        setErrors((current) => ({...current, [name]: ""}));
     };
 
-    const validateStep = () => {
-        const newErrors = {};
-
-        if (step === 1) {
-            if (!form.fullName) newErrors.fullName = "Full name is required.";
-            if (!form.birthday) newErrors.birthday = "Birthday is required.";
-            if (!form.gender) newErrors.gender = "Gender is required.";
-            if (!form.civilStatus) newErrors.civilStatus = "Civil status is required.";
-            if (!form.email) newErrors.email = "Email address is required.";
-            if (!form.phone) newErrors.phone = "Contact number is required.";
-            if (!form.address) newErrors.address = "Address is required.";
-        }
-
-        if (step === 2) {
-            if (!form.educationalAttainment) {
-                newErrors.educationalAttainment = "Educational attainment is required.";
-            }
-
-            if (!form.school) {
-                newErrors.school = "School is required.";
-            }
-        }
-
-        if (step === 3) {
-            if (!form.skills) {
-                newErrors.skills = "Please provide your skills.";
-            }
-
-            if (!form.languages) {
-                newErrors.languages = "Please provide your languages.";
-            }
-        }
-
-        if (step === 4) {
-            if (!form.resume) {
-                newErrors.resume = "Resume is required.";
-            }
-
-            if (!form.validId) {
-                newErrors.validId = "Valid ID is required.";
-            }
-
-            if (!form.passport) {
-                newErrors.passport = "Passport is required.";
-            }
-        }
-
-        setErrors(newErrors);
-
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const nextStep = () => {
-        if (validateStep()) {
-            setStep((current) => Math.min(current + 1, 5));
-            window.scrollTo({top: 0, behavior: "smooth"});
-        }
-    };
-
-    const previousStep = () => {
-        setStep((current) => Math.max(current - 1, 1));
+    const goToStep = (target) => {
+        setStep(target);
         window.scrollTo({top: 0, behavior: "smooth"});
     };
 
+    const nextStep = () => {
+        const stepErrors = validate(form, step);
+        setErrors(stepErrors);
+
+        if (Object.keys(stepErrors).length === 0) goToStep(Math.min(step + 1, 5));
+    };
+
     const handleSubmit = async () => {
-        if (!validateStep()) {
+        const allErrors = {...validate(form, 1), ...validate(form, 2), ...validate(form, 3), ...validate(form, 4)};
+
+        if (Object.keys(allErrors).length > 0) {
+            setErrors(allErrors);
+            setFormError("Please check the highlighted fields.");
+            goToStep(firstStepWithError(allErrors) ?? 1);
             return;
         }
 
         setLoading(true);
+        setFormError("");
 
         const payload = new FormData();
 
+        if (jobId) payload.append("job_opening_id", jobId); // walang laman = direct apply
+
         Object.entries(form).forEach(([key, value]) => {
-            if (value !== null && value !== "") {
-                payload.append(key, value);
-            }
+            if (value === null || value === "") return;
+            payload.append(toSnake(key), value);
         });
 
         try {
-            console.log("Application payload ready for API:", Object.fromEntries(payload));
+            const res = await websiteApi.apply(payload);
+            setSubmitted({reference: res.data?.reference});
+            window.scrollTo({top: 0});
+        } catch (e) {
+            const {message, errors: serverErrors} = parseError(e);
 
-            await new Promise((resolve) => setTimeout(resolve, 1200));
+            const mapped = {};
+            Object.entries(serverErrors).forEach(([key, messages]) => {
+                mapped[toCamel(key)] = messages[0];
+            });
 
-            setSubmitted(true);
+            setErrors(mapped);
+
+            const errorStep = firstStepWithError(mapped);
+
+            if (errorStep) {
+                setFormError("Please check the highlighted fields.");
+                goToStep(errorStep);
+            } else {
+                setFormError(mapped.jobOpeningId ?? message);
+            }
         } finally {
             setLoading(false);
         }
@@ -163,16 +264,51 @@ const RecruitmentApply = () => {
                             Application Submitted
                         </Heading>
 
-                        <p className="mb-8 text-gray-600">
+                        {submitted.reference && (
+                            <Text className="mb-3 text-gray-700">
+                                Your reference number is{" "}
+                                <strong className="text-[#062B4A]">{submitted.reference}</strong>. Please keep it for
+                                follow-ups.
+                            </Text>
+                        )}
+
+                        <Text className="mb-8 text-gray-600">
                             Thank you for submitting your application. Our recruitment team will review your application
                             and contact you regarding the next steps.
-                        </p>
+                        </Text>
 
                         <div className="flex flex-col justify-center gap-3 sm:flex-row">
                             <Button onClick={() => navigate("/recruitment/jobs")}>View Job Openings</Button>
 
                             <Button variant="secondary" onClick={() => navigate("/")}>
                                 Back to Home
+                            </Button>
+                        </div>
+                    </Card>
+                </div>
+            </main>
+        );
+    }
+
+    if (jobState === "missing") {
+        return (
+            <main className="min-h-screen bg-gray-50 px-5 py-16 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-2xl">
+                    <Card className="p-8 text-center sm:p-12">
+                        <Heading as="h1" className="mb-3">
+                            Job Opening Unavailable
+                        </Heading>
+
+                        <Text className="mb-8 text-gray-600">
+                            This job opening is closed or no longer available. You can browse other openings, or submit
+                            a general application and our team will match you to a suitable position.
+                        </Text>
+
+                        <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                            <Button onClick={() => navigate("/recruitment/jobs")}>View Job Openings</Button>
+
+                            <Button variant="secondary" onClick={continueWithoutJob}>
+                                Apply Without a Job
                             </Button>
                         </div>
                     </Card>
@@ -192,55 +328,82 @@ const RecruitmentApply = () => {
                 </div>
 
                 <div className="mb-8">
-                    <p className="mb-2 text-sm font-bold uppercase tracking-[0.18em] text-[#4F7383]">Recruitment</p>
+                    <Text size="sm" weight="bold" className="mb-2 uppercase tracking-[0.18em] text-[#4F7383]">
+                        Recruitment
+                    </Text>
 
                     <Heading as="h1">Applicant Application</Heading>
 
-                    <p className="mt-2 max-w-2xl text-gray-600">
+                    <Text className="mt-2 max-w-2xl text-gray-600">
                         Complete the application form below. No account is required to apply.
-                    </p>
+                    </Text>
                 </div>
 
-                {selectedJob && (
+                {jobState === "loading" && (
+                    <Card className="mb-8">
+                        <Text className="text-gray-600">Loading job opening...</Text>
+                    </Card>
+                )}
+
+                {jobState === "ready" && job && (
                     <Card className="mb-8 border-[#062B4A]/15 bg-[#062B4A]/[0.03]">
-                        <p className="mb-1 text-sm font-semibold text-[#4F7383]">Applying For</p>
+                        <Text size="sm" weight="semibold" className="mb-1 text-[#4F7383]">
+                            Applying For
+                        </Text>
 
-                        <Heading as="h2">{selectedJob.title}</Heading>
+                        <Heading as="h2">{job.title}</Heading>
 
-                        <p className="mt-1 text-gray-600">{selectedJob.country}</p>
+                        <Text className="mt-1 text-gray-600">{job.country}</Text>
+                    </Card>
+                )}
+
+                {jobState === "none" && (
+                    <Card className="mb-8 border-[#4F7383]/20 bg-[#4F7383]/5">
+                        <Text size="sm" weight="semibold" className="mb-1 text-[#4F7383]">
+                            General Application
+                        </Text>
+
+                        <Text className="text-gray-600">
+                            You are not applying to a specific job. Our recruitment team will review your profile and
+                            match you to a suitable job opening.
+                        </Text>
                     </Card>
                 )}
 
                 <div className="mb-8 grid grid-cols-5 gap-2">
-                    {[1, 2, 3, 4, 5].map((item) => (
-                        <div key={item}>
+                    {STEPS.map((label, index) => (
+                        <div key={label}>
                             <div
                                 className={`mb-2 h-2 rounded-full transition-all duration-300 ${
-                                    item <= step ? "bg-[#062B4A]" : "bg-gray-200"
+                                    index + 1 <= step ? "bg-[#062B4A]" : "bg-gray-200"
                                 }`}
                             />
 
-                            <p
-                                className={`text-center text-xs font-semibold ${
-                                    item <= step ? "text-[#062B4A]" : "text-gray-400"
-                                }`}
+                            <Text
+                                size="xs"
+                                weight="semibold"
+                                className={`text-center ${index + 1 <= step ? "text-[#062B4A]" : "text-gray-400"}`}
                             >
-                                {item === 1 && "Personal"}
-                                {item === 2 && "Education"}
-                                {item === 3 && "Experience"}
-                                {item === 4 && "Documents"}
-                                {item === 5 && "Review"}
-                            </p>
+                                {label}
+                            </Text>
                         </div>
                     ))}
                 </div>
+
+                {formError && (
+                    <Text size="sm" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-red-600">
+                        {formError}
+                    </Text>
+                )}
 
                 {step === 1 && (
                     <Card>
                         <div className="mb-8">
                             <Heading as="h2">Personal Information</Heading>
 
-                            <p className="mt-2 text-gray-600">Provide your basic personal and contact information.</p>
+                            <Text className="mt-2 text-gray-600">
+                                Provide your basic personal and contact information.
+                            </Text>
                         </div>
 
                         <div className="space-y-5">
@@ -259,6 +422,7 @@ const RecruitmentApply = () => {
                                     label="Birthday"
                                     name="birthday"
                                     type="date"
+                                    max={today()}
                                     value={form.birthday}
                                     onChange={handleChange}
                                     required
@@ -272,10 +436,7 @@ const RecruitmentApply = () => {
                                     onChange={handleChange}
                                     required
                                     error={errors.gender}
-                                    options={[
-                                        {value: "male", label: "Male"},
-                                        {value: "female", label: "Female"},
-                                    ]}
+                                    options={GENDER_OPTIONS}
                                 />
 
                                 <Select
@@ -285,12 +446,7 @@ const RecruitmentApply = () => {
                                     onChange={handleChange}
                                     required
                                     error={errors.civilStatus}
-                                    options={[
-                                        {value: "single", label: "Single"},
-                                        {value: "married", label: "Married"},
-                                        {value: "widowed", label: "Widowed"},
-                                        {value: "separated", label: "Separated"},
-                                    ]}
+                                    options={CIVIL_STATUS_OPTIONS}
                                 />
                             </div>
 
@@ -337,7 +493,7 @@ const RecruitmentApply = () => {
                         <div className="mb-8">
                             <Heading as="h2">Education</Heading>
 
-                            <p className="mt-2 text-gray-600">Provide your educational background.</p>
+                            <Text className="mt-2 text-gray-600">Provide your educational background.</Text>
                         </div>
 
                         <div className="space-y-5">
@@ -348,14 +504,7 @@ const RecruitmentApply = () => {
                                 onChange={handleChange}
                                 required
                                 error={errors.educationalAttainment}
-                                options={[
-                                    {value: "elementary", label: "Elementary"},
-                                    {value: "high-school", label: "High School"},
-                                    {value: "senior-high", label: "Senior High School"},
-                                    {value: "vocational", label: "Vocational"},
-                                    {value: "college", label: "College"},
-                                    {value: "post-graduate", label: "Post Graduate"},
-                                ]}
+                                options={EDUCATION_OPTIONS}
                             />
 
                             <Input
@@ -374,7 +523,34 @@ const RecruitmentApply = () => {
                                 placeholder="Course / Program"
                                 value={form.course}
                                 onChange={handleChange}
+                                error={errors.course}
                             />
+
+                            <div className="grid gap-5 md:grid-cols-2">
+                                <Select
+                                    label="Start Year"
+                                    name="educationStartYear"
+                                    placeholder="Select year"
+                                    value={form.educationStartYear}
+                                    onChange={handleChange}
+                                    options={YEAR_OPTIONS}
+                                    error={errors.educationStartYear}
+                                />
+
+                                <Select
+                                    label="Graduated Year"
+                                    name="educationGraduatedYear"
+                                    placeholder="Select year"
+                                    value={form.educationGraduatedYear}
+                                    onChange={handleChange}
+                                    options={YEAR_OPTIONS}
+                                    error={errors.educationGraduatedYear}
+                                />
+                            </div>
+
+                            <Text size="sm" className="text-gray-500">
+                                Leave the graduated year blank if you have not graduated yet.
+                            </Text>
                         </div>
                     </Card>
                 )}
@@ -384,9 +560,9 @@ const RecruitmentApply = () => {
                         <div className="mb-8">
                             <Heading as="h2">Work Experience & Skills</Heading>
 
-                            <p className="mt-2 text-gray-600">
+                            <Text className="mt-2 text-gray-600">
                                 Tell us about your previous work experience and relevant skills.
-                            </p>
+                            </Text>
                         </div>
 
                         <div className="space-y-5">
@@ -397,6 +573,7 @@ const RecruitmentApply = () => {
                                     placeholder="Company name"
                                     value={form.previousEmployer}
                                     onChange={handleChange}
+                                    error={errors.previousEmployer}
                                 />
 
                                 <Input
@@ -405,18 +582,46 @@ const RecruitmentApply = () => {
                                     placeholder="Job position"
                                     value={form.previousPosition}
                                     onChange={handleChange}
+                                    error={errors.previousPosition}
                                 />
                             </div>
 
                             <Input
-                                label="Years of Experience"
-                                name="yearsExperience"
-                                type="number"
-                                min="0"
-                                placeholder="e.g. 2"
-                                value={form.yearsExperience}
+                                label="Company Address"
+                                name="previousEmployerAddress"
+                                placeholder="City, Province, Country"
+                                value={form.previousEmployerAddress}
                                 onChange={handleChange}
+                                error={errors.previousEmployerAddress}
                             />
+
+                            <div className="grid gap-5 md:grid-cols-2">
+                                <Input
+                                    label="Start (Month / Year)"
+                                    name="workStart"
+                                    type="month"
+                                    placeholder="YYYY-MM"
+                                    max={thisMonth()}
+                                    value={form.workStart}
+                                    onChange={handleChange}
+                                    error={errors.workStart}
+                                />
+
+                                <Input
+                                    label="End (Month / Year)"
+                                    name="workEnd"
+                                    type="month"
+                                    placeholder="YYYY-MM"
+                                    max={thisMonth()}
+                                    value={form.workEnd}
+                                    onChange={handleChange}
+                                    error={errors.workEnd}
+                                />
+                            </div>
+
+                            <Text size="sm" className="text-gray-500">
+                                Leave the end date blank if you are still working there.
+                            </Text>
 
                             <Textarea
                                 label="Skills"
@@ -436,6 +641,7 @@ const RecruitmentApply = () => {
                                 value={form.certifications}
                                 onChange={handleChange}
                                 rows={4}
+                                error={errors.certifications}
                             />
 
                             <Textarea
@@ -457,110 +663,54 @@ const RecruitmentApply = () => {
                         <div className="mb-8">
                             <Heading as="h2">Documents</Heading>
 
-                            <p className="mt-2 text-gray-600">Upload the documents required for your application.</p>
+                            <Text className="mt-2 text-gray-600">
+                                Upload the documents required for your application. Maximum of 5 MB per file.
+                            </Text>
                         </div>
 
                         <div className="grid gap-5 md:grid-cols-2">
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                                    Resume <span className="text-red-500">*</span>
-                                </label>
+                            <FileField
+                                label="Resume"
+                                name="resume"
+                                icon={FileText}
+                                accept=".pdf,.doc,.docx"
+                                hint="PDF, DOC, or DOCX"
+                                file={form.resume}
+                                onChange={handleChange}
+                                error={errors.resume}
+                                required
+                            />
 
-                                <label className="flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-gray-300 bg-gray-50 px-5 py-8 text-center transition hover:border-[#062B4A] hover:bg-[#062B4A]/5">
-                                    <FileText size={28} className="mb-2 text-[#062B4A]" />
+                            <FileField
+                                label="Valid ID"
+                                name="validId"
+                                accept=".jpg,.jpeg,.png,.pdf"
+                                hint="JPG, PNG, or PDF"
+                                file={form.validId}
+                                onChange={handleChange}
+                                error={errors.validId}
+                                required
+                            />
 
-                                    <span className="text-sm font-semibold text-gray-700">
-                                        {form.resume?.name || "Choose Resume"}
-                                    </span>
+                            <FileField
+                                label="Passport"
+                                name="passport"
+                                accept=".jpg,.jpeg,.png,.pdf"
+                                hint="JPG, PNG, or PDF"
+                                file={form.passport}
+                                onChange={handleChange}
+                                error={errors.passport}
+                                required
+                            />
 
-                                    <span className="mt-1 text-xs text-gray-500">PDF, DOC, or DOCX</span>
-
-                                    <input
-                                        type="file"
-                                        name="resume"
-                                        accept=".pdf,.doc,.docx"
-                                        onChange={handleChange}
-                                        className="hidden"
-                                    />
-                                </label>
-
-                                {errors.resume && <p className="mt-1 text-sm text-red-600">{errors.resume}</p>}
-                            </div>
-
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                                    Valid ID <span className="text-red-500">*</span>
-                                </label>
-
-                                <label className="flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-gray-300 bg-gray-50 px-5 py-8 text-center transition hover:border-[#062B4A] hover:bg-[#062B4A]/5">
-                                    <Upload size={28} className="mb-2 text-[#062B4A]" />
-
-                                    <span className="text-sm font-semibold text-gray-700">
-                                        {form.validId?.name || "Choose Valid ID"}
-                                    </span>
-
-                                    <span className="mt-1 text-xs text-gray-500">JPG, PNG, or PDF</span>
-
-                                    <input
-                                        type="file"
-                                        name="validId"
-                                        accept=".jpg,.jpeg,.png,.pdf"
-                                        onChange={handleChange}
-                                        className="hidden"
-                                    />
-                                </label>
-
-                                {errors.validId && <p className="mt-1 text-sm text-red-600">{errors.validId}</p>}
-                            </div>
-
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                                    Passport <span className="text-red-500">*</span>
-                                </label>
-
-                                <label className="flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-gray-300 bg-gray-50 px-5 py-8 text-center transition hover:border-[#062B4A] hover:bg-[#062B4A]/5">
-                                    <Upload size={28} className="mb-2 text-[#062B4A]" />
-
-                                    <span className="text-sm font-semibold text-gray-700">
-                                        {form.passport?.name || "Choose Passport"}
-                                    </span>
-
-                                    <span className="mt-1 text-xs text-gray-500">JPG, PNG, or PDF</span>
-
-                                    <input
-                                        type="file"
-                                        name="passport"
-                                        accept=".jpg,.jpeg,.png,.pdf"
-                                        onChange={handleChange}
-                                        className="hidden"
-                                    />
-                                </label>
-
-                                {errors.passport && <p className="mt-1 text-sm text-red-600">{errors.passport}</p>}
-                            </div>
-
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                                    Other Requirements
-                                </label>
-
-                                <label className="flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-gray-300 bg-gray-50 px-5 py-8 text-center transition hover:border-[#062B4A] hover:bg-[#062B4A]/5">
-                                    <Upload size={28} className="mb-2 text-[#062B4A]" />
-
-                                    <span className="text-sm font-semibold text-gray-700">
-                                        {form.otherRequirements?.name || "Choose File"}
-                                    </span>
-
-                                    <span className="mt-1 text-xs text-gray-500">Additional supporting document</span>
-
-                                    <input
-                                        type="file"
-                                        name="otherRequirements"
-                                        onChange={handleChange}
-                                        className="hidden"
-                                    />
-                                </label>
-                            </div>
+                            <FileField
+                                label="Other Requirements"
+                                name="otherRequirements"
+                                hint="Additional supporting document"
+                                file={form.otherRequirements}
+                                onChange={handleChange}
+                                error={errors.otherRequirements}
+                            />
                         </div>
                     </Card>
                 )}
@@ -570,110 +720,74 @@ const RecruitmentApply = () => {
                         <div className="mb-8">
                             <Heading as="h2">Review Application</Heading>
 
-                            <p className="mt-2 text-gray-600">
+                            <Text className="mt-2 text-gray-600">
                                 Review your information before submitting your application.
-                            </p>
+                            </Text>
                         </div>
 
                         <div className="space-y-6">
-                            <div>
-                                <h3 className="mb-3 font-bold text-[#062B4A]">Personal Information</h3>
+                            <ReviewSection
+                                title="Applying For"
+                                items={[["Job Opening", job ? `${job.title} (${job.country})` : "General application"]]}
+                            />
 
-                                <div className="grid gap-4 rounded-xl bg-gray-50 p-5 md:grid-cols-2">
-                                    <p>
-                                        <span className="font-semibold">Full Name:</span> {form.fullName}
-                                    </p>
-                                    <p>
-                                        <span className="font-semibold">Birthday:</span> {form.birthday}
-                                    </p>
-                                    <p>
-                                        <span className="font-semibold">Gender:</span> {form.gender}
-                                    </p>
-                                    <p>
-                                        <span className="font-semibold">Civil Status:</span> {form.civilStatus}
-                                    </p>
-                                    <p>
-                                        <span className="font-semibold">Email:</span> {form.email}
-                                    </p>
-                                    <p>
-                                        <span className="font-semibold">Phone:</span> {form.phone}
-                                    </p>
-                                    <p className="md:col-span-2">
-                                        <span className="font-semibold">Address:</span> {form.address}
-                                    </p>
-                                </div>
-                            </div>
+                            <ReviewSection
+                                title="Personal Information"
+                                items={[
+                                    ["Full Name", form.fullName],
+                                    ["Birthday", formatDate(form.birthday)],
+                                    ["Gender", humanize(form.gender)],
+                                    ["Civil Status", humanize(form.civilStatus)],
+                                    ["Email", form.email],
+                                    ["Phone", form.phone],
+                                    ["Address", form.address],
+                                ]}
+                            />
 
-                            <div>
-                                <h3 className="mb-3 font-bold text-[#062B4A]">Education</h3>
+                            <ReviewSection
+                                title="Education"
+                                items={[
+                                    ["Educational Attainment", humanize(form.educationalAttainment)],
+                                    ["School", form.school],
+                                    ["Course", form.course],
+                                    [
+                                        "Years Attended",
+                                        [form.educationStartYear, form.educationGraduatedYear]
+                                        .filter(Boolean)
+                                        .join(" – "),
+                                    ],
+                                ]}
+                            />
 
-                                <div className="grid gap-4 rounded-xl bg-gray-50 p-5 md:grid-cols-2">
-                                    <p>
-                                        <span className="font-semibold">Educational Attainment:</span>{" "}
-                                        {form.educationalAttainment}
-                                    </p>
+                            <ReviewSection
+                                title="Work Experience & Skills"
+                                items={[
+                                    ["Previous Employer", form.previousEmployer],
+                                    ["Company Address", form.previousEmployerAddress],
+                                    ["Previous Position", form.previousPosition],
+                                    ["Period", formatPeriod(form.workStart, form.workEnd)],
+                                    ["Skills", form.skills],
+                                    ["Certifications", form.certifications],
+                                    ["Languages", form.languages],
+                                ]}
+                            />
 
-                                    <p>
-                                        <span className="font-semibold">School:</span> {form.school}
-                                    </p>
-
-                                    <p>
-                                        <span className="font-semibold">Course:</span> {form.course || "Not provided"}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h3 className="mb-3 font-bold text-[#062B4A]">Work Experience & Skills</h3>
-
-                                <div className="space-y-3 rounded-xl bg-gray-50 p-5">
-                                    <p>
-                                        <span className="font-semibold">Previous Employer:</span>{" "}
-                                        {form.previousEmployer || "Not provided"}
-                                    </p>
-
-                                    <p>
-                                        <span className="font-semibold">Previous Position:</span>{" "}
-                                        {form.previousPosition || "Not provided"}
-                                    </p>
-
-                                    <p>
-                                        <span className="font-semibold">Years of Experience:</span>{" "}
-                                        {form.yearsExperience || "Not provided"}
-                                    </p>
-
-                                    <p>
-                                        <span className="font-semibold">Skills:</span> {form.skills}
-                                    </p>
-
-                                    <p>
-                                        <span className="font-semibold">Certifications:</span>{" "}
-                                        {form.certifications || "Not provided"}
-                                    </p>
-
-                                    <p>
-                                        <span className="font-semibold">Languages:</span> {form.languages}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h3 className="mb-3 font-bold text-[#062B4A]">Documents</h3>
-
-                                <div className="space-y-2 rounded-xl bg-gray-50 p-5 text-sm">
-                                    <p>Resume: {form.resume?.name || "Not provided"}</p>
-                                    <p>Valid ID: {form.validId?.name || "Not provided"}</p>
-                                    <p>Passport: {form.passport?.name || "Not provided"}</p>
-                                    <p>Other Requirements: {form.otherRequirements?.name || "Not provided"}</p>
-                                </div>
-                            </div>
+                            <ReviewSection
+                                title="Documents"
+                                items={[
+                                    ["Resume", form.resume?.name],
+                                    ["Valid ID", form.validId?.name],
+                                    ["Passport", form.passport?.name],
+                                    ["Other Requirements", form.otherRequirements?.name],
+                                ]}
+                            />
                         </div>
                     </Card>
                 )}
 
                 <div className="mt-8 flex flex-col-reverse justify-between gap-3 border-t border-gray-200 pt-6 sm:flex-row">
                     {step > 1 ? (
-                        <Button variant="secondary" onClick={previousStep} disabled={loading}>
+                        <Button variant="secondary" onClick={() => goToStep(step - 1)} disabled={loading}>
                             <ArrowLeft size={18} />
                             Previous
                         </Button>
@@ -682,7 +796,9 @@ const RecruitmentApply = () => {
                     )}
 
                     {step < 5 ? (
-                        <Button onClick={nextStep}>Continue</Button>
+                        <Button onClick={nextStep} disabled={jobState === "loading"}>
+                            Continue
+                        </Button>
                     ) : (
                         <Button onClick={handleSubmit} loading={loading}>
                             {!loading && <Check size={18} />}

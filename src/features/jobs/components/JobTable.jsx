@@ -10,16 +10,18 @@ const JobTable = ({jobs, loading, onView, onEdit, onStatus, onDelete}) => {
             key: "title",
             header: "Job Opening",
             render: (job) => (
-                <div className="flex items-center gap-3">
+                <div className="flex max-w-[260px] items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-950">
                         <BriefcaseBusiness size={19} />
                     </div>
-                    <div>
-                        <Text size="sm" weight="semibold" className="text-gray-900">
+                    <div className="min-w-0">
+                        <Text
+                            size="sm"
+                            weight="semibold"
+                            title={job.title}
+                            className="line-clamp-2 break-words text-gray-900"
+                        >
                             {job.title}
-                        </Text>
-                        <Text size="xs" className="mt-1 text-gray-500">
-                            {job.employer || "—"}
                         </Text>
                     </div>
                 </div>
@@ -38,8 +40,8 @@ const JobTable = ({jobs, loading, onView, onEdit, onStatus, onDelete}) => {
                 </span>
             ),
         },
-        {key: "vacancies", header: "Vacancies"},
-        {key: "salary", header: "Salary Range", nowrap: true},
+        {key: "vacancies", header: "Vacancies", maxWidth: 90, lines: 1},
+        {key: "salary", header: "Salary Range", maxWidth: 170, lines: 2},
         {
             key: "deadline",
             header: "Deadline",
@@ -47,6 +49,15 @@ const JobTable = ({jobs, loading, onView, onEdit, onStatus, onDelete}) => {
             render: (job) => (
                 <Text as="span" size="sm">
                     {formatDate(job.deadline)}
+                </Text>
+            ),
+        },
+        {
+            key: "applicants_count",
+            header: "Applicants",
+            render: (job) => (
+                <Text as="span" size="sm">
+                    {job.applicants_count ?? "—"}
                 </Text>
             ),
         },

@@ -22,6 +22,7 @@ import JobManagement from "../pages/admin/JobManagement";
 import ApplicantManagement from "../pages/admin/ApplicantManagement";
 import ManpowerRequestManagement from "../pages/admin/ManpowerRequestManagement";
 import AnnouncementManagement from "../pages/admin/AnnouncementManagement";
+import EmployerManagement from "../pages/admin/EmployerManagement";
 import LoginPage from "../pages/LoginPage";
 
 const AppRoutes = () => {
@@ -53,6 +54,7 @@ const AppRoutes = () => {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/dashboard/jobs" element={<JobManagement />} />
                 <Route path="/dashboard/applicants" element={<ApplicantManagement />} />
+                <Route path="/dashboard/employers" element={<EmployerManagement />} />
                 <Route path="/dashboard/manpower-request-management" element={<ManpowerRequestManagement />} />
                 <Route path="/dashboard/announcements" element={<AnnouncementManagement />} />
             </Route>

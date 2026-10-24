@@ -1,37 +1,39 @@
 import {useState} from "react";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
+import Text from "../../../components/ui/Text";
 import Textarea from "../../../components/ui/Textarea";
 import Modal from "../../../shared/components/Modal";
 import CountrySelect from "../../countries/components/CountrySelect";
+import EmployerMultiSelect from "../../employers/components/EmployerMultiSelect";
 
+// Kaliwang column. half: true = kalahati lang ng lapad (magkatabi ng sumunod na half)
 const FIELDS = [
     {name: "title", label: "Job Title", required: true, placeholder: "e.g. Factory Worker"},
-    {name: "employer", label: "Employer", required: true, placeholder: "Hiring company"},
     {name: "country", label: "Country", required: true, type: "country"},
-    {name: "vacancies", label: "Number of Vacancies", required: true, placeholder: "e.g. 10"},
-    {name: "salary", label: "Salary Range", placeholder: "e.g. NT$ 28,000 - 35,000"},
+    {name: "employer_ids", label: "Employers", required: true, type: "employers"},
+    {name: "vacancies", label: "Total Vacancies", required: true, placeholder: "e.g. 30", half: true},
+    {name: "salary", label: "Salary Range", placeholder: "e.g. NT$ 28,000", half: true},
     {name: "deadline", label: "Application Deadline", required: true, type: "date"},
-    {
-        name: "description",
-        label: "Job Description",
-        required: true,
-        type: "textarea",
-        resize: "vertical",
-        placeholder: "Describe the duties and responsibilities...",
-        full: true,
-    },
 ];
 
-const emptyForm = {title: "", employer: "", country: "", description: "", vacancies: "", salary: "", deadline: ""};
+const emptyForm = {
+    title: "",
+    country: "",
+    employer_ids: [],
+    description: "",
+    vacancies: "",
+    salary: "",
+    deadline: "",
+};
 
 const JobFormModal = ({mode, job, onClose, onSubmit}) => {
     const [form, setForm] = useState(
         job
             ? {
                   title: job.title ?? "",
-                  employer: job.employer ?? "",
                   country: job.country ?? "",
+                  employer_ids: (job.employers ?? []).map((employer) => employer.id),
                   description: job.description ?? "",
                   vacancies: String(job.vacancies ?? ""),
                   salary: job.salary ?? "",
@@ -43,10 +45,17 @@ const JobFormModal = ({mode, job, onClose, onSubmit}) => {
     const [formError, setFormError] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
-    const handleChange = (event) => {
-        const {name, value} = event.target;
-        setForm((current) => ({...current, [name]: value}));
-    };
+    const setField = (name, value) => setForm((current) => ({...current, [name]: value}));
+
+    const handleChange = (event) => setField(event.target.name, event.target.value);
+
+    // kapag nagpalit ng country, mawawala ang mga napiling employer (ibang bansa na)
+    const handleCountryChange = (value) =>
+        setForm((current) => ({
+            ...current,
+            country: value,
+            employer_ids: value === current.country ? current.employer_ids : [],
+        }));
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -78,7 +87,7 @@ const JobFormModal = ({mode, job, onClose, onSubmit}) => {
         <Modal
             as="form"
             onSubmit={handleSubmit}
-            size="lg"
+            size="xl"
             title={mode === "create" ? "Create Job Opening" : "Edit Job Opening"}
             subtitle="Provide the job opening details."
             onClose={onClose}
@@ -93,51 +102,66 @@ const JobFormModal = ({mode, job, onClose, onSubmit}) => {
                 </>
             }
         >
-            <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2 sm:p-6">
+            <div className="space-y-5 p-5 sm:p-6">
                 {formError && (
-                    <p className="rounded-lg bg-red-50 px-3.5 py-2.5 text-sm text-red-600 sm:col-span-2">{formError}</p>
+                    <Text size="sm" className="rounded-lg bg-red-50 px-3.5 py-2.5 text-red-600">
+                        {formError}
+                    </Text>
                 )}
 
-                {FIELDS.map(({full, type, ...field}) => (
-                    <div key={field.name} className={full ? "sm:col-span-2" : ""}>
-                        {type === "country" ? (
-                            <>
-                                <label
-                                    htmlFor={`job-${field.name}`}
-                                    className="mb-1.5 block text-sm font-medium text-slate-700"
-                                >
-                                    {field.label}
-                                    {field.required ? " *" : ""}
-                                </label>
-                                <CountrySelect
-                                    id={`job-${field.name}`}
-                                    required={field.required}
-                                    value={form.country}
-                                    onChange={(value) => setForm((current) => ({...current, country: value}))}
-                                />
-                                {errors.country?.[0] && (
-                                    <p className="mt-1 text-xs text-red-600">{errors.country[0]}</p>
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    {/* Kaliwa: lahat ng fields. Ang half ay magkatabi mula lg pataas */}
+                    <div className="grid grid-cols-1 content-start gap-5 lg:grid-cols-2">
+                        {FIELDS.map(({type, half, ...field}) => (
+                            <div key={field.name} className={half ? "" : "lg:col-span-2"}>
+                                {type === "country" ? (
+                                    <CountrySelect
+                                        id={`job-${field.name}`}
+                                        label={field.label}
+                                        required={field.required}
+                                        value={form.country}
+                                        onChange={handleCountryChange}
+                                        error={errors.country?.[0]}
+                                    />
+                                ) : type === "employers" ? (
+                                    <EmployerMultiSelect
+                                        id={`job-${field.name}`}
+                                        label={field.label}
+                                        required={field.required}
+                                        country={form.country}
+                                        value={form.employer_ids}
+                                        onChange={(ids) => setField("employer_ids", ids)}
+                                        error={errors.employer_ids?.[0]}
+                                    />
+                                ) : (
+                                    <Input
+                                        {...field}
+                                        type={type}
+                                        value={form[field.name]}
+                                        onChange={handleChange}
+                                        error={errors[field.name]?.[0]}
+                                    />
                                 )}
-                            </>
-                        ) : type === "textarea" ? (
-                            <Textarea
-                                {...field}
-                                rows={4}
-                                value={form[field.name]}
-                                onChange={handleChange}
-                                error={errors[field.name]?.[0]}
-                            />
-                        ) : (
-                            <Input
-                                {...field}
-                                type={type}
-                                value={form[field.name]}
-                                onChange={handleChange}
-                                error={errors[field.name]?.[0]}
-                            />
-                        )}
+                            </div>
+                        ))}
                     </div>
-                ))}
+
+                    {/* Kanan: Job Description lang, umaabot sa buong taas */}
+                    <div className="flex flex-col">
+                        <Textarea
+                            label="Job Description"
+                            name="description"
+                            required
+                            placeholder="Describe the duties and responsibilities..."
+                            value={form.description}
+                            onChange={handleChange}
+                            error={errors.description?.[0]}
+                            resize="vertical"
+                            className="flex flex-1 flex-col"
+                            textareaClassName="min-h-[240px] grow"
+                        />
+                    </div>
+                </div>
             </div>
         </Modal>
     );

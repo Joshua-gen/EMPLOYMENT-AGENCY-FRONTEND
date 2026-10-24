@@ -3,7 +3,7 @@ import {X} from "lucide-react";
 import Button from "../../components/ui/Button";
 import Heading from "../../components/ui/Heading";
 
-const SIZES = {md: "max-w-lg", lg: "max-w-2xl", xl: "max-w-4xl"};
+const SIZES = {md: "max-w-lg", lg: "max-w-2xl", xl: "max-w-5xl", xxl: "max-w-7xl"};
 
 const Modal = ({title, subtitle, eyebrow, onClose, footer, size = "md", as: Wrapper = "div", children, ...rest}) => {
     useEffect(() => {
