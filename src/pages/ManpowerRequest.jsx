@@ -1,4 +1,5 @@
-import {useState} from "react";
+import {useRef, useState} from "react";
+import ReCAPTCHA from "react-google-recaptcha";
 import {Building2, UserRound, ClipboardList, Plus, Trash2, Send, CheckCircle2, ArrowLeft} from "lucide-react";
 import {Link} from "react-router-dom";
 
@@ -56,6 +57,8 @@ const ManpowerRequest = () => {
     const [serverError, setServerError] = useState("");
     const [reference, setReference] = useState(null);
     const [submitted, setSubmitted] = useState(false);
+    const [captchaToken, setCaptchaToken] = useState(null);
+    const recaptchaRef = useRef(null);
 
     const setField = (name, value) => {
         setForm((current) => ({...current, [name]: value}));
@@ -151,6 +154,11 @@ const ManpowerRequest = () => {
             return;
         }
 
+        if (!captchaToken) {
+            setServerError("Please complete the reCAPTCHA verification.");
+            return;
+        }
+
         setSubmitting(true);
 
         const result = await toResult(() =>
@@ -171,10 +179,12 @@ const ManpowerRequest = () => {
                     number_required: Number(job.numberRequired),
                     description: job.jobDescription,
                 })),
+                g_recaptcha_response: captchaToken,
             })
         );
-
         setSubmitting(false);
+        setCaptchaToken(null);
+        recaptchaRef.current?.reset();
 
         if (result.ok) {
             setReference(result.data?.reference ?? null);
@@ -509,6 +519,20 @@ const ManpowerRequest = () => {
                                 {jobPositions.length} of 10 job positions added.
                             </p>
                         </section>
+
+                        <div className="mt-8 border-t border-gray-200 pt-6">
+                            <p className="mb-3 text-sm text-gray-700">
+                                Verify that you are not a robot before submitting.
+                            </p>
+
+                            <ReCAPTCHA
+                                ref={recaptchaRef}
+                                sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                                onChange={setCaptchaToken}
+                                onExpired={() => setCaptchaToken(null)}
+                                onErrored={() => setCaptchaToken(null)}
+                            />
+                        </div>
 
                         {/* Submit */}
                         <div className="mt-8 flex flex-col-reverse gap-4 border-t border-gray-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
