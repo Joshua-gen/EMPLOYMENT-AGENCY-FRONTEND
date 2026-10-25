@@ -1,4 +1,5 @@
-import {useEffect, useState} from "react";
+import ReCAPTCHA from "react-google-recaptcha";
+import {useEffect, useRef, useState} from "react";
 import {useNavigate, useParams, useSearchParams} from "react-router-dom";
 import {ArrowLeft, Check, FileText} from "lucide-react";
 
@@ -157,6 +158,8 @@ const RecruitmentApply = () => {
     const [form, setForm] = useState(INITIAL_FORM);
     const [errors, setErrors] = useState({});
     const [formError, setFormError] = useState("");
+    const captchaRef = useRef(null);
+    const [captchaToken, setCaptchaToken] = useState("");
 
     useEffect(() => {
         if (!jobId) return;
@@ -212,12 +215,19 @@ const RecruitmentApply = () => {
             return;
         }
 
+        if (!captchaToken) {
+            setFormError("Please complete the reCAPTCHA verification.");
+            return;
+        }
+
         setLoading(true);
         setFormError("");
 
         const payload = new FormData();
 
-        if (jobId) payload.append("job_opening_id", jobId); // walang laman = direct apply
+        payload.append("g-recaptcha-response", captchaToken);
+
+        if (jobId) payload.append("job_opening_id", jobId);
 
         Object.entries(form).forEach(([key, value]) => {
             if (value === null || value === "") return;
@@ -229,6 +239,9 @@ const RecruitmentApply = () => {
             setSubmitted({reference: res.data?.reference});
             window.scrollTo({top: 0});
         } catch (e) {
+            captchaRef.current?.reset();
+            setCaptchaToken("");
+
             const {message, errors: serverErrors} = parseError(e);
 
             const mapped = {};
@@ -780,6 +793,16 @@ const RecruitmentApply = () => {
                                     ["Passport", form.passport?.name],
                                     ["Other Requirements", form.otherRequirements?.name],
                                 ]}
+                            />
+                        </div>
+
+                        <div className="mt-6">
+                            <ReCAPTCHA
+                                ref={captchaRef}
+                                sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                                onChange={(token) => setCaptchaToken(token || "")}
+                                onExpired={() => setCaptchaToken("")}
+                                onErrored={() => setCaptchaToken("")}
                             />
                         </div>
                     </Card>
