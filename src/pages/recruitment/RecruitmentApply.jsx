@@ -1,5 +1,5 @@
-import ReCAPTCHA from "react-google-recaptcha";
 import {useEffect, useRef, useState} from "react";
+import ReCAPTCHA from "react-google-recaptcha";
 import {useNavigate, useParams, useSearchParams} from "react-router-dom";
 import {ArrowLeft, Check, FileText} from "lucide-react";
 
@@ -24,6 +24,8 @@ import {formatDate, formatPeriod} from "../../shared/utils/formatDate";
 import parseError from "../../shared/utils/parseError";
 
 const STEPS = ["Personal", "Education", "Experience", "Documents", "Review"];
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 const STEP_FIELDS = {
     1: ["fullName", "birthday", "gender", "civilStatus", "email", "phone", "address"],
@@ -158,8 +160,11 @@ const RecruitmentApply = () => {
     const [form, setForm] = useState(INITIAL_FORM);
     const [errors, setErrors] = useState({});
     const [formError, setFormError] = useState("");
-    const captchaRef = useRef(null);
-    const [captchaToken, setCaptchaToken] = useState("");
+    const [captchaToken, setCaptchaToken] = useState(null);
+    const [uploading, setUploading] = useState({}); // { resume: 45, validId: 100 }
+    const recaptchaRef = useRef(null);
+
+    const isUploading = Object.keys(uploading).length > 0;
 
     useEffect(() => {
         if (!jobId) return;
@@ -186,11 +191,57 @@ const RecruitmentApply = () => {
         setJobState("none");
     };
 
-    const handleChange = (event) => {
-        const {name, value, files} = event.target;
+    const clearUploading = (name) =>
+        setUploading((current) => {
+            const {[name]: _removed, ...rest} = current;
+            return rest;
+        });
 
-        setForm((current) => ({...current, [name]: files ? files[0] ?? null : value}));
+    const handleFile = (name, file) => {
+        if (!file) {
+            setForm((current) => ({...current, [name]: null}));
+            return;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+            setErrors((current) => ({...current, [name]: "File must not exceed 5 MB."}));
+            return;
+        }
+
+        setUploading((current) => ({...current, [name]: 0}));
+
+        const reader = new FileReader();
+
+        reader.onprogress = (e) => {
+            if (e.lengthComputable) {
+                setUploading((current) => ({...current, [name]: Math.round((e.loaded / e.total) * 100)}));
+            }
+        };
+
+        reader.onload = () => {
+            setForm((current) => ({...current, [name]: file}));
+            clearUploading(name);
+        };
+
+        reader.onerror = () => {
+            setErrors((current) => ({...current, [name]: "Failed to read the file. Please try again."}));
+            clearUploading(name);
+        };
+
+        reader.readAsArrayBuffer(file);
+    };
+
+    const handleChange = (event) => {
+        const {name, value, files, type} = event.target;
+
         setErrors((current) => ({...current, [name]: ""}));
+
+        if (type === "file") {
+            handleFile(name, files?.[0] ?? null);
+            return;
+        }
+
+        setForm((current) => ({...current, [name]: value}));
     };
 
     const goToStep = (target) => {
@@ -224,10 +275,9 @@ const RecruitmentApply = () => {
         setFormError("");
 
         const payload = new FormData();
+        payload.append("g_recaptcha_response", captchaToken);
 
-        payload.append("g-recaptcha-response", captchaToken);
-
-        if (jobId) payload.append("job_opening_id", jobId);
+        if (jobId) payload.append("job_opening_id", jobId); // walang laman = direct apply
 
         Object.entries(form).forEach(([key, value]) => {
             if (value === null || value === "") return;
@@ -237,11 +287,10 @@ const RecruitmentApply = () => {
         try {
             const res = await websiteApi.apply(payload);
             setSubmitted({reference: res.data?.reference});
+            setCaptchaToken(null);
+            recaptchaRef.current?.reset();
             window.scrollTo({top: 0});
         } catch (e) {
-            captchaRef.current?.reset();
-            setCaptchaToken("");
-
             const {message, errors: serverErrors} = parseError(e);
 
             const mapped = {};
@@ -445,6 +494,7 @@ const RecruitmentApply = () => {
                                 <Select
                                     label="Gender"
                                     name="gender"
+                                    placeholder="Select gender"
                                     value={form.gender}
                                     onChange={handleChange}
                                     required
@@ -455,6 +505,7 @@ const RecruitmentApply = () => {
                                 <Select
                                     label="Civil Status"
                                     name="civilStatus"
+                                    placeholder="Select civil status"
                                     value={form.civilStatus}
                                     onChange={handleChange}
                                     required
@@ -513,6 +564,7 @@ const RecruitmentApply = () => {
                             <Select
                                 label="Educational Attainment"
                                 name="educationalAttainment"
+                                placeholder="Select educational attainment"
                                 value={form.educationalAttainment}
                                 onChange={handleChange}
                                 required
@@ -691,6 +743,8 @@ const RecruitmentApply = () => {
                                 file={form.resume}
                                 onChange={handleChange}
                                 error={errors.resume}
+                                uploading={"resume" in uploading}
+                                progress={uploading.resume}
                                 required
                             />
 
@@ -702,6 +756,8 @@ const RecruitmentApply = () => {
                                 file={form.validId}
                                 onChange={handleChange}
                                 error={errors.validId}
+                                uploading={"validId" in uploading}
+                                progress={uploading.validId}
                                 required
                             />
 
@@ -713,6 +769,8 @@ const RecruitmentApply = () => {
                                 file={form.passport}
                                 onChange={handleChange}
                                 error={errors.passport}
+                                uploading={"passport" in uploading}
+                                progress={uploading.passport}
                                 required
                             />
 
@@ -723,6 +781,8 @@ const RecruitmentApply = () => {
                                 file={form.otherRequirements}
                                 onChange={handleChange}
                                 error={errors.otherRequirements}
+                                uploading={"otherRequirements" in uploading}
+                                progress={uploading.otherRequirements}
                             />
                         </div>
                     </Card>
@@ -795,14 +855,17 @@ const RecruitmentApply = () => {
                                 ]}
                             />
                         </div>
+                        <div className="mt-6 border-t border-gray-200 pt-6">
+                            <Text className="mb-3 text-gray-700">
+                                Verify that you are not a robot before submitting.
+                            </Text>
 
-                        <div className="mt-6">
                             <ReCAPTCHA
-                                ref={captchaRef}
+                                ref={recaptchaRef}
                                 sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                                onChange={(token) => setCaptchaToken(token || "")}
-                                onExpired={() => setCaptchaToken("")}
-                                onErrored={() => setCaptchaToken("")}
+                                onChange={setCaptchaToken}
+                                onExpired={() => setCaptchaToken(null)}
+                                onErrored={() => setCaptchaToken(null)}
                             />
                         </div>
                     </Card>
@@ -810,7 +873,11 @@ const RecruitmentApply = () => {
 
                 <div className="mt-8 flex flex-col-reverse justify-between gap-3 border-t border-gray-200 pt-6 sm:flex-row">
                     {step > 1 ? (
-                        <Button variant="secondary" onClick={() => goToStep(step - 1)} disabled={loading}>
+                        <Button
+                            variant="secondary"
+                            onClick={() => goToStep(step - 1)}
+                            disabled={loading || isUploading}
+                        >
                             <ArrowLeft size={18} />
                             Previous
                         </Button>
@@ -819,13 +886,13 @@ const RecruitmentApply = () => {
                     )}
 
                     {step < 5 ? (
-                        <Button onClick={nextStep} disabled={jobState === "loading"}>
-                            Continue
+                        <Button onClick={nextStep} disabled={jobState === "loading" || isUploading}>
+                            {isUploading ? "Uploading file..." : "Continue"}
                         </Button>
                     ) : (
                         <Button onClick={handleSubmit} loading={loading}>
                             {!loading && <Check size={18} />}
-                            Submit Application
+                            {loading ? "Uploading application..." : "Submit Application"}
                         </Button>
                     )}
                 </div>
