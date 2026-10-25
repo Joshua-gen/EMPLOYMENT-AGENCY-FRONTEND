@@ -1,9 +1,6 @@
 {
     "rewrites": [
-        {"source": "/login", "destination": "https://employment-agency-backend.onrender.com/login"},
-        {"source": "/logout", "destination": "https://employment-agency-backend.onrender.com/logout"},
-        {"source": "/api/:path*", "destination": "https://employment-agency-backend.onrender.com/api/:path*"},
-        {"source": "/sanctum/:path*", "destination": "https://employment-agency-backend.onrender.com/sanctum/:path*"},
+        {"source": "/backend/:path*", "destination": "https://employment-agency-backend.onrender.com/:path*"},
         {"source": "/(.*)", "destination": "/index.html"}
     ]
 }

@@ -14,29 +14,12 @@ export default defineConfig({
             // "/login": "http://localhost:8000",
             // "/logout": "http://localhost:8000",
             // "/api": "http://localhost:8000",
-            "/login": {
+            "/backend": {
                 target: "https://employment-agency-backend.onrender.com",
                 changeOrigin: true,
                 secure: true,
                 cookieDomainRewrite: "localhost",
-            },
-            "/logout": {
-                target: "https://employment-agency-backend.onrender.com",
-                changeOrigin: true,
-                secure: true,
-                cookieDomainRewrite: "localhost",
-            },
-            "/api": {
-                target: "https://employment-agency-backend.onrender.com",
-                changeOrigin: true,
-                secure: true,
-                cookieDomainRewrite: "localhost",
-            },
-            "/sanctum": {
-                target: "https://employment-agency-backend.onrender.com",
-                changeOrigin: true,
-                secure: true,
-                cookieDomainRewrite: "localhost",
+                rewrite: (path) => path.replace(/^\/backend/, ""),
             },
         },
     },
