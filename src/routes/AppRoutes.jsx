@@ -1,4 +1,5 @@
 import {Routes, Route} from "react-router-dom";
+import ScrollToTop from "../components/ui/ScrollToTop";
 
 import PublicLayout from "../layouts/PublicLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -27,38 +28,41 @@ import LoginPage from "../pages/LoginPage";
 
 const AppRoutes = () => {
     return (
-        <Routes>
-            <Route element={<PublicLayout />}>
-                <Route path="/" element={<Home />} />
+        <>
+            <ScrollToTop />
+            <Routes>
+                <Route element={<PublicLayout />}>
+                    <Route path="/" element={<Home />} />
 
-                <Route path="/about/mission" element={<Mission />} />
-                <Route path="/about/vision" element={<Vision />} />
-                <Route path="/about/history" element={<History />} />
-                <Route path="/about/faqs" element={<FAQs />} />
-                <Route path="/about/gallery" element={<Gallery />} />
+                    <Route path="/about/mission" element={<Mission />} />
+                    <Route path="/about/vision" element={<Vision />} />
+                    <Route path="/about/history" element={<History />} />
+                    <Route path="/about/faqs" element={<FAQs />} />
+                    <Route path="/about/gallery" element={<Gallery />} />
 
-                <Route path="/our-services" element={<OurServices />} />
-                <Route path="/recruitment/jobs" element={<JobOpenings />} />
-                <Route path="/recruitment/jobs/:id" element={<JobDetails />} />
-                <Route path="/recruitment/apply" element={<RecruitmentApply />} />
-                <Route path="/recruitment/apply/:jobId" element={<RecruitmentApply />} />
+                    <Route path="/our-services" element={<OurServices />} />
+                    <Route path="/recruitment/jobs" element={<JobOpenings />} />
+                    <Route path="/recruitment/jobs/:id" element={<JobDetails />} />
+                    <Route path="/recruitment/apply" element={<RecruitmentApply />} />
+                    <Route path="/recruitment/apply/:jobId" element={<RecruitmentApply />} />
 
-                <Route path="/employers/login" element={<LoginPage />} />
+                    <Route path="/employers/login" element={<LoginPage />} />
 
-                <Route path="/contactus" element={<ContactUs />} />
-                <Route path="/manpower-request" element={<ManpowerRequest />} />
-                <Route path="/component-test" element={<ComponentPlayground />} />
-            </Route>
+                    <Route path="/contactus" element={<ContactUs />} />
+                    <Route path="/manpower-request" element={<ManpowerRequest />} />
+                    <Route path="/component-test" element={<ComponentPlayground />} />
+                </Route>
 
-            <Route element={<DashboardLayout />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/dashboard/jobs" element={<JobManagement />} />
-                <Route path="/dashboard/applicants" element={<ApplicantManagement />} />
-                <Route path="/dashboard/employers" element={<EmployerManagement />} />
-                <Route path="/dashboard/manpower-request-management" element={<ManpowerRequestManagement />} />
-                <Route path="/dashboard/announcements" element={<AnnouncementManagement />} />
-            </Route>
-        </Routes>
+                <Route element={<DashboardLayout />}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/dashboard/jobs" element={<JobManagement />} />
+                    <Route path="/dashboard/applicants" element={<ApplicantManagement />} />
+                    <Route path="/dashboard/employers" element={<EmployerManagement />} />
+                    <Route path="/dashboard/manpower-request-management" element={<ManpowerRequestManagement />} />
+                    <Route path="/dashboard/announcements" element={<AnnouncementManagement />} />
+                </Route>
+            </Routes>
+        </>
     );
 };
 

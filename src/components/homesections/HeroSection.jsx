@@ -33,15 +33,25 @@ const HeroSection = () => {
 
     return (
         <section className="relative min-h-[calc(100vh-56px)] overflow-hidden bg-[#062B4A]">
-            {/* Background Image Layer */}
-            <div className="pointer-events-none absolute inset-0 z-0">
+            {/* Responsive Background GIF */}
+            <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
                 <img
                     src={heroImage}
-                    alt="Hero Background"
-                    className="h-full w-full object-cover object-center opacity-60"
+                    alt=""
+                    aria-hidden="true"
+                    className="
+                        absolute inset-0
+                        h-full w-full
+                        object-cover
+                        object-center
+                        opacity-60
+                        max-sm:object-[55%_center]
+                        sm:object-center
+                    "
                 />
             </div>
 
+            {/* Dark Overlay */}
             <div className="pointer-events-none absolute inset-0 z-0 bg-black/40" />
 
             {/* Curve SVG */}

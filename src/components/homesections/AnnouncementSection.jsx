@@ -5,6 +5,7 @@ import Card from "../ui/Card";
 import Heading from "../ui/Heading";
 import Text from "../ui/Text";
 import bgImage from "../../assets/images/bg-3.jfif";
+import {Megaphone, MapPin} from "lucide-react";
 
 const headerVariants = {
     hidden: {opacity: 0, y: 20},
@@ -109,27 +110,50 @@ const AnnouncementSection = () => {
                     variants={gridVariants}
                     viewport={{once: true, amount: 0.2}}
                 >
-                    {announcements.map((announcement) => (
+                    {announcements.map((announcement, index) => (
                         <motion.div
                             key={announcement.id}
                             variants={cardVariants}
-                            whileHover={{y: -6}}
-                            transition={{duration: 0.2}}
-                            className="h-full"
+                            whileHover={{y: -6, rotate: 0}}
+                            transition={{duration: 0.25}}
+                            className="relative h-full pt-3"
                         >
-                            <Card className="h-full border-0 p-0 shadow-lg transition-shadow duration-300 hover:shadow-xl">
-                                <div className="flex h-full flex-col p-6 sm:p-7">
-                                    <div className="flex items-center justify-between gap-4">
-                                        <span className="rounded-full bg-[#062B4A]/10 px-3 py-1 text-xs font-semibold text-[#062B4A]">
+                            {/* Back Paper */}
+                            <div
+                                className="absolute inset-x-3 bottom-1 top-5 rounded-xl border-2 border-[#C5D7E6] bg-[#C5D7E6] shadow-sm"
+                                style={{transform: `rotate(${index % 2 === 0 ? 4 : -4}deg)`}}
+                            />
+
+                            {/* Middle Paper */}
+                            <div
+                                className="absolute inset-x-1 bottom-1 top-3 rounded-xl border-2 border-[#EFE8A5] bg-[#EFE8A5]"
+                                style={{transform: `rotate(${index % 2 === 0 ? -2 : 2}deg)`}}
+                            />
+
+                            {/* Main Paper */}
+                            <Card className="relative h-full overflow-visible rounded-xl border border-gray-200 bg-white p-0 shadow-xl">
+                                {/* Pin */}
+                                <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
+                                    <div className="relative flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#062B4A] shadow-md">
+                                        <div className="h-2 w-2 rounded-full bg-[#EFE8A5]" />
+                                    </div>
+                                    <div className="mx-auto h-2 w-1 bg-[#062B4A]/40" />
+                                </div>
+
+                                <div className="flex h-full flex-col p-6 pt-8 sm:p-7 sm:pt-9">
+                                    {/* Paper Header */}
+                                    <div className="flex items-start justify-between gap-3 border-b border-dashed border-gray-200 pb-5">
+                                        <span className="rounded-md bg-[#062B4A]/10 px-3 py-1.5 text-xs font-bold text-[#062B4A]">
                                             {announcement.type}
                                         </span>
 
-                                        <Text size="xs" weight="medium" className="text-gray-500">
+                                        <Text size="xs" weight="medium" className="shrink-0 pt-1 text-gray-500">
                                             {announcement.date}
                                         </Text>
                                     </div>
 
-                                    <Heading as="h3" className="mt-6">
+                                    {/* Paper Content */}
+                                    <Heading as="h3" className="mt-5 text-[#062B4A]">
                                         {announcement.title}
                                     </Heading>
 
@@ -137,14 +161,17 @@ const AnnouncementSection = () => {
                                         {announcement.description}
                                     </Text>
 
-                                    <Button
-                                        variant="primary"
-                                        size="md"
-                                        className="mt-6 w-full"
-                                        onClick={() => navigate("/recruitment/jobs")}
-                                    >
-                                        View Openings
-                                    </Button>
+                                    {/* Paper Footer */}
+                                    <div className="mt-6 border-t border-dashed border-gray-200 pt-5">
+                                        <Button
+                                            variant="primary"
+                                            size="md"
+                                            className="w-full"
+                                            onClick={() => navigate("/recruitment/jobs")}
+                                        >
+                                            View Openings
+                                        </Button>
+                                    </div>
                                 </div>
                             </Card>
                         </motion.div>

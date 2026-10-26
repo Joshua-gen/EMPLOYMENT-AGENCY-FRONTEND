@@ -532,12 +532,6 @@ const ManpowerRequest = () => {
                                 onExpired={() => setCaptchaToken(null)}
                                 onErrored={() => setCaptchaToken(null)}
                             />
-
-                            {!captchaToken && (
-                                <p className="mt-2 text-sm text-gray-500">
-                                    Please complete the verification to submit your request.
-                                </p>
-                            )}
                         </div>
 
                         {/* Submit */}
